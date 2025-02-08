@@ -1,5 +1,7 @@
 package gui_app;
 
+/* Main entry class for the program */
+
 public class CrasyEigthsGame {
 
 	public static void main(String[] args) {
@@ -11,6 +13,11 @@ public class CrasyEigthsGame {
 	
 	// Default CrasyEigthsGame constructor
 	public CrasyEigthsGame(){
-		new UI_Frame();
+		
+		// New instance of class UI_Frame
+		UI_Frame frame = new UI_Frame();
+		
+		
+	
 	}
 }
