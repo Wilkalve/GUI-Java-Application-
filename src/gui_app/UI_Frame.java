@@ -2,18 +2,18 @@ package gui_app;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Image;
-import java.awt.Toolkit;
+import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 import javax.swing.BorderFactory;
@@ -22,60 +22,83 @@ import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
-import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
+import javax.swing.JProgressBar;
+import javax.swing.JWindow;
+import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
+
+import model_.Card;
+import model_.Deck;
+
 
 public class UI_Frame extends JFrame {
 
 	private static final long serialVersionUID = 1345678976544L;
-	private String[] images = {"resources/lJc.png", "resources/lAh.png", "resources/l9s.png","resources/lJc.png", "resources/lQh.png", "resources/lQc.png", "resources/lQs.png", "resources/l5h.png", "resources/l3c.png", "resources/l2d.png", "resources/l1s.png"};
-	private Random random = new Random();
-	
-	/*Default constructor */
-	UI_Frame() {
+	private static UI_Frame instance;
+	private JWindow splashScreen;
+	private JLabel[] playerScores;
+	private ImageIcon haftCard;
+	private ImageIcon FullCard;
+   Card card;
+	private JPanel scoreboardPanel;
+	private JMenu fileMenu, helpMenu, subMenu;
+	private JMenuItem newItem_1, newItem_2, newItem_3, newItem_4, newItem_5, exitItem;
+	private JPanel left, right, down, top, center, southPanel;
+	private JComboBox<String> languageBox;
+	private JButton button1, button2, button3, eastButton, westButton;
+	private JLabel[] playerScoreLabels;
+	private JLabel label, playerLabel, cardLabel;
+	private List<JButton> halfCardButtons;
 
+	/* Default constructor */
+	public UI_Frame() {
 
+		splashScreen = new JWindow();
+		initializeMainframe();
+
+	}
+
+	private void initializeMainframe() {
 		// Initialize the frame
 		setTitle("CRAZY EIGHT GAME");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		pack();
 		setSize(908, 808);
 		setExtendedState(JFrame.MAXIMIZED_BOTH);
-		
+
 		// change default image icon
 		ImageIcon icon = new ImageIcon("resources/Kd.png");
 		setIconImage(icon.getImage());
 		setResizable(false);
-		Color cardTableGreen = new Color(0, 100, 0);
+
+		Color cardTableGreen = new Color(0, 100, 35);
 		getContentPane().setBackground(cardTableGreen);
-		
+
 		// Methods
 		fileMenu();
-		cardDeck();
-		playerCard();
-		scoreboardPanel();
-		
-	
-	
+		initializePanels();
+		initializeButtons();
 		setLocationRelativeTo(null);
-		
+
 		setVisible(true);
-
 	}
-	
 
-	/* File menu */
+	// Make sure only one instance of the GUI View is created
+	public static UI_Frame getInstance() {
+		if (instance == null) {
+			instance = new UI_Frame();
+		}
+		return instance;
+	}
+
+	// Method to create the file menu
 	public void fileMenu() {
-
 		// Create a menu bar
 		JMenuBar menubar = new JMenuBar();
 		setJMenuBar(menubar);
@@ -88,25 +111,22 @@ public class UI_Frame extends JFrame {
 		menubar.add(label);
 
 		// Create JMenu
-		JMenu fileMenu = new JMenu("Menu");
-		JMenu helpMenu = new JMenu("Help");
+		fileMenu = new JMenu("Menu");
+		helpMenu = new JMenu("Help");
 
-		JMenuItem newItem_1 = new JMenuItem("How to play");
-		JMenuItem newItem_2 = new JMenuItem("New Game");
-		JMenuItem newItem_3 = new JMenuItem("Game Option");
-		JMenuItem newItem_4 = new JMenuItem("Languages");
+		newItem_1 = new JMenuItem("How to play");
+		newItem_2 = new JMenuItem("New Game");
+		newItem_3 = new JMenuItem("Hint");
+		newItem_4 = new JMenuItem("Reset");
 
-		JMenu subMenu = new JMenu("Game Option");
-		JMenuItem newItem_5 = new JMenuItem("About");
-		JMenuItem exitItem = new JMenuItem("Exit");
+		subMenu = new JMenu("Game Option");
+		newItem_5 = new JMenuItem("About");
 
-		// actions listener
+		exitItem = new JMenuItem("Exit");
+
+		// Action listener for About item
 		newItem_5.setMnemonic('A');
-		newItem_5.addActionListener(event -> JOptionPane.showMessageDialog(this, "The game is called Crasy Eight Game",
-				"About", JOptionPane.PLAIN_MESSAGE));
-
-		exitItem.setMnemonic('x');
-		exitItem.addActionListener(event -> System.exit(0));
+		exitItem.setMnemonic('X');
 
 		// Add menu items to the File menu
 		helpMenu.add(newItem_1);
@@ -131,10 +151,11 @@ public class UI_Frame extends JFrame {
 
 		// Add components to the panel
 		String[] languages = { "English (Canada)", "French (français)" };
-		JComboBox<String> languageBox = new JComboBox<>(languages);
+		languageBox = new JComboBox<>(languages);
 		languageBox.setFocusable(false);
 		ImageIcon languageIcon = new ImageIcon(
 				new ImageIcon("resources/Vector.png").getImage().getScaledInstance(22, 22, Image.SCALE_SMOOTH));
+
 		JLabel globalLabel = new JLabel(languageIcon);
 		globalLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 5));
 
@@ -145,301 +166,333 @@ public class UI_Frame extends JFrame {
 		menubar.add(languagePanel);
 
 	}
+
+	public void initializePanels() {
+		setLayout(new BorderLayout());
+
+		cardLabel = new JLabel();
+        add(cardLabel, BorderLayout.CENTER);
+        
+		center = new JPanel(new BorderLayout());
+		top = new JPanel(new BorderLayout());
+		down = new JPanel(new BorderLayout());
+		right = new JPanel(new BorderLayout());
+		left = new JPanel(new BorderLayout());
+
+		center.setOpaque(false);
+		top.setOpaque(false);
+		down.setOpaque(false);
+		right.setOpaque(false);
+		left.setOpaque(false);
+
+		add(center, BorderLayout.CENTER);
+		add(top, BorderLayout.NORTH);
+		add(down, BorderLayout.SOUTH);
+		add(right, BorderLayout.EAST);
+		add(left, BorderLayout.WEST);
+	}
+
+	private void initializeButtons() {
+		JPanel mainPanel = new JPanel(new BorderLayout());
+		mainPanel.setOpaque(false);
+		
+
+	    label = new JLabel("Number of Players");
+		label.setBorder(new EmptyBorder(0, 12, 0, 0));
+		label.setFont(new Font("Arial", Font.BOLD, 12));
+		label.setForeground(Color.WHITE);
+		mainPanel.add(label, BorderLayout.NORTH);
+
+		JPanel buttonPanel = new JPanel(new GridLayout(3, 1, 6, 0));
+		buttonPanel.setOpaque(false);
+
+		button1 = new JButton("2");
+		button2 = new JButton("3");
+		button3 = new JButton("4");
+
+		buttonPanel.add(button1);
+		buttonPanel.add(button2);
+		buttonPanel.add(button3);
+
+		buttonPanel.setBorder(new EmptyBorder(10, 20, 20, 20));
+
+		mainPanel.add(buttonPanel, BorderLayout.CENTER);
+		left.add(mainPanel, BorderLayout.NORTH);
+
+		JPanel newPanel = new JPanel(new BorderLayout());
+		newPanel.setOpaque(false);
+		
+		
+		southPanel = new JPanel(new BorderLayout());
+		southPanel.setOpaque(false);
+
+		westButton = new JButton("Chat");
+		eastButton = new JButton("Start Game");
+		
+
+		// Add padding to the buttons
+		westButton.setBorder(new EmptyBorder(10, 20, 10, 20));
+		eastButton.setBorder(new EmptyBorder(10, 20, 10, 20));
+
+		// Add buttons to the south panel
+		southPanel.add(westButton, BorderLayout.EAST);
+		southPanel.add(eastButton, BorderLayout.WEST);
+
+		// Add padding to the panel
+		southPanel.setBorder(new EmptyBorder(0, 40, 20, 40));
+
+		// Add the south panel to the main frame
+		down.add(southPanel, BorderLayout.SOUTH);
+
+	}
 	
-	
-	// Player panel
-	public void playerCard() {
-
-	    JButton button = new JButton("START GAME");
-	    button.setFont(new Font("Sans Serif", Font.BOLD, 12));
-	    button.setPreferredSize(new Dimension(80, 50));
-
-	    // Chatbox panel
-	    JButton chatBox = new JButton("Chat Box");
-	    chatBox.setFont(new Font("Sans Serif", Font.BOLD, 12));
-	    chatBox.setForeground(Color.BLACK);
-	    chatBox.setPreferredSize(new Dimension(80, 50));
-
-	    // Add an action listener to the chatBox
-	    chatBox.addActionListener(new ActionListener() {
-	        @Override
-	        public void actionPerformed(ActionEvent e) {
-	            chatBox();
+	 public void displayCard(Card card) {
+		 
+	        if (card != null) {
+	            String imagePath = card.getFullCardImage(); 
+	            ImageIcon cardImage = new ImageIcon(imagePath); 
+	            cardLabel.setIcon(cardImage);
+	        } else {
+	            cardLabel.setText("No more cards in the deck!");
+	            cardLabel.setIcon(null); 
 	        }
-	    });
-
-	    // Create a panel with BorderLayout to place the button
-	    JPanel buttonPanel = new JPanel(new BorderLayout());
-	    buttonPanel.setOpaque(false);
-
-	    // Start button panel with padding
-	    JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-	    leftPanel.setOpaque(false);
-	    leftPanel.setBorder(new EmptyBorder(0, 20, 0, 0)); // Add left padding
-	    leftPanel.add(button);
-
-	    // Chat box panel with padding
-	    JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-	    rightPanel.setOpaque(false);
-	    rightPanel.setBorder(new EmptyBorder(0, 0, 0, 20)); // Add right padding
-	    rightPanel.add(chatBox);
-
-	    // Center panel
-	    JPanel centerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-	    centerPanel.setOpaque(false);
-	    centerPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 0, 0));
-	    centerPanel.setBorder(new EmptyBorder(45, 55, 40, 40));
-
-	    // Card panel
-	    for (int i = 0; i < images.length; i++) {
-	        JButton temp = new JButton(new ImageIcon(images[random.nextInt(images.length)]));
-	        temp.setBorder(null);
-	        temp.setContentAreaFilled(false);
-	        temp.setBorderPainted(false);
-	        temp.setAlignmentX(Component.CENTER_ALIGNMENT);
-	        centerPanel.add(temp);
-	        centerPanel.add(Box.createVerticalStrut(0));
 	    }
-
-	    JButton cardButton = new JButton(new ImageIcon("resources/Kd.png"));
-	    cardButton.setBorder(null);
-	    cardButton.setOpaque(false);
-	    cardButton.setContentAreaFilled(false);
-	    cardButton.setBorderPainted(false);
-	    cardButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-	    // Add button to the center
-	    centerPanel.add(cardButton);
-
-	    // Add sub-panels to the main buttonPanel
-	    buttonPanel.add(leftPanel, BorderLayout.WEST);
-	    buttonPanel.add(centerPanel, BorderLayout.CENTER);
-	    buttonPanel.add(rightPanel, BorderLayout.EAST);
-
-	    getContentPane().add(buttonPanel, BorderLayout.SOUTH);
-	}
-
 	
 	
-	/*  Method for center panel */
-	public void cardDeck() {
+	public void setUpCards(int numPlayers) {
+		// Clear existing cards and scores, but keep the left panel
+		center.removeAll();
+		top.removeAll();
+		down.removeAll();
+		right.removeAll();
 
-		JPanel cardDeck = new JPanel(new BorderLayout());
-		cardDeck.setOpaque(false);
+		// Re-add the south panel with permanent buttons
+		down.add(southPanel, BorderLayout.SOUTH);
 
-		// Center panel for the card piles with GridBagLayout
-		JPanel centerPanel = new JPanel(new GridBagLayout());
-		centerPanel.setOpaque(false);
+		cardView();
 
-		// East panel
-		JPanel eastPanel = new JPanel();
-		eastPanel.setLayout(new BoxLayout(eastPanel, BoxLayout.Y_AXIS));
-		eastPanel.setOpaque(false);
-		eastPanel.setBorder(new EmptyBorder(90, 200, 90, 200));
+		// Create or update scoreboard
+		if (scoreboardPanel == null) {
+			scoreboardPanel = new JPanel(new GridLayout(1, 4, 10, 0));
+			scoreboardPanel.setOpaque(false);
+			playerScores = new JLabel[4];
 
-		// West panel
-		JPanel westPanel = new JPanel();
-		westPanel.setLayout(new BoxLayout(westPanel, BoxLayout.Y_AXIS));
-		westPanel.setOpaque(false);
-		westPanel.setBorder(new EmptyBorder(90, 200, 90, 200));
-
-	
-		
-		JButton deck = new JButton(new ImageIcon("resources/Kd.png"));
-	
-		deck.setBorder(null);
-		deck.setOpaque(false);
-		deck.setContentAreaFilled(false);
-		deck.setBorderPainted(false);
-		deck.setLayout(new FlowLayout(FlowLayout.CENTER, 0, 0));
-
-		// Card panel
-		for (int i = 0; i < 11; i++) {
-			JButton temp = new JButton(new ImageIcon("resources/lback_2.png"));
-			temp.setBorder(null);
-			temp.setContentAreaFilled(false);
-			temp.setBorderPainted(false);
-			eastPanel.add(temp);
-			eastPanel.add(Box.createVerticalStrut(0));
+			for (int i = 0; i < 4; i++) {
+				JPanel playerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+				playerPanel.setOpaque(false);
+			    playerLabel = new JLabel("Score " + (i + 1) + ": ");
+				playerLabel.setForeground(Color.WHITE);
+				playerScores[i] = new JLabel("0");
+				playerScores[i].setForeground(Color.WHITE);
+				playerPanel.add(playerLabel);
+				playerPanel.add(playerScores[i]);
+				scoreboardPanel.add(playerPanel);
+			}
 		}
 
-		JButton eastButton = new JButton(new ImageIcon("resources/back_2.png"));
-		eastButton.setBorder(null);
-		eastButton.setOpaque(false);
-		eastButton.setContentAreaFilled(false);
-		eastButton.setBorderPainted(false);
-		eastPanel.add(eastButton);
-		
-
-		// Card panel
-		for (int i = 0; i < 11; i++) {
-			JButton temp = new JButton(new ImageIcon("resources/lback_2.png"));
-			temp.setBorder(null);
-			temp.setContentAreaFilled(false);
-			temp.setBorderPainted(false);
-			westPanel.add(temp);
-			westPanel.add(Box.createVerticalStrut(0));
+		// Update visibility of player scores based on number of players
+		for (int i = 0; i < 4; i++) {
+			scoreboardPanel.getComponent(i).setVisible(i < numPlayers);
 		}
 
-		// West button
-		JButton westButton = new JButton(new ImageIcon("resources/back_2.png"));
-		westButton.setBorder(null);
-		westButton.setOpaque(false);
-		westButton.setContentAreaFilled(false);
-		westButton.setBorderPainted(false);
-		westPanel.add(westButton);
+		top.add(scoreboardPanel, BorderLayout.NORTH);
 
-		JButton newButton = new JButton(new ImageIcon("resources/back.png"));
-		newButton.setBorder(null);
-		newButton.setOpaque(false);
-		newButton.setContentAreaFilled(false);
-		newButton.setBorderPainted(false);
+		// Add cards based on the number of players
+		switch (numPlayers) {
+		case 2:
+			top.add(createCardPile(null), BorderLayout.CENTER);
+			//down.add(createCardPanel(), BorderLayout.CENTER);
+			break;
+		case 3:
+			top.add(createCardPile(null), BorderLayout.CENTER);
+			//down.add(createCardPanel(), BorderLayout.CENTER);
 
-		// Panel alignments
-		centerPanel.add(deck);
-		centerPanel.add(Box.createHorizontalStrut(22));
-		centerPanel.add(newButton);
+			right.setBorder(new EmptyBorder(110, 0, 0, 280));
+			right.add(createCardPile(null), BorderLayout.CENTER);
+			break;
+		case 4:
 
-		// Use Box to help with alignment
-		Box eastBox = Box.createVerticalBox();
-		eastBox.add(Box.createVerticalGlue());
-		eastBox.add(eastPanel);
-		eastBox.add(Box.createVerticalGlue());
+			top.add(createCardPile(null), BorderLayout.CENTER);
+			//down.add(createCardPanel(), BorderLayout.CENTER);
+			right.setBorder(new EmptyBorder(110, 0, 0, 280));
+			right.add(createCardPile(null), BorderLayout.CENTER);
 
-		Box westBox = Box.createVerticalBox();
-		westBox.add(Box.createVerticalGlue());
-		westBox.add(westPanel);
-		westBox.add(Box.createVerticalGlue());
+			left.setBorder(new EmptyBorder(0, 280, 0, 110));
+			left.add(createCardPile(null), BorderLayout.CENTER);
+			break;
+		}
 
-		// Add sub-panels to the main buttonPanel
-		cardDeck.add(eastBox, BorderLayout.EAST);
-		cardDeck.add(centerPanel, BorderLayout.CENTER);
-		cardDeck.add(westBox, BorderLayout.WEST);
-
-		getContentPane().add(cardDeck, BorderLayout.CENTER);
+		// Refresh the layout
+		revalidate();
+		repaint();
 	}
 
+
 	
-	// Score panel
-	// Score panel
-	public void scoreboardPanel() {
-	    // Create scoreboard panel
-	    JPanel scoreboardPanel = new JPanel();
-	    scoreboardPanel.setOpaque(false);
-	    scoreboardPanel.setPreferredSize(new Dimension(320, 30)); // Adjust the size to fit all four players' scores
-	    scoreboardPanel.setLayout(new GridLayout(1, 4));
+	public JPanel createDeckCard(String name) {
+	    JPanel cardPanel = new JPanel(new GridBagLayout());
 
-	    String player1Score = "0";
-	    // Create player score labels
-	    JLabel player1Label = new JLabel("Player 1 Score: " + player1Score, JLabel.CENTER);
-	    player1Label.setForeground(Color.WHITE);
-	    player1Label.setFont(new Font("Arial", Font.BOLD, 16));
-
-	    String player2Score = "1";
-	    JLabel player2Label = new JLabel("Player 2 Score: " + player2Score, JLabel.CENTER);
-	    player2Label.setForeground(Color.WHITE);
-	    player2Label.setFont(new Font("Arial", Font.BOLD, 16));
-
-	    String player3Score = "0";
-	    JLabel player3Label = new JLabel("Player 3 Score: " + player3Score, JLabel.CENTER);
-	    player3Label.setForeground(Color.WHITE);
-	    player3Label.setFont(new Font("Arial", Font.BOLD, 16));
-
-	    String player4Score = "0";
-	    JLabel player4Label = new JLabel("Player 4 Score: " + player4Score, JLabel.CENTER);
-	    player4Label.setForeground(Color.WHITE);
-	    player4Label.setFont(new Font("Arial", Font.BOLD, 16));
-
-	    // Add labels to scoreboard panel
-	    scoreboardPanel.add(player1Label);
-	    scoreboardPanel.add(player2Label);
-	    scoreboardPanel.add(player3Label);
-	    scoreboardPanel.add(player4Label);
-
-	    // Center panel
-	    JPanel northPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-	    northPanel.setOpaque(false);
-	    northPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 0, 0));
-	    northPanel.setBorder(new EmptyBorder(35, 45, 30, 30));
-
-	    // Card panel
-	    for (int i = 0; i < 11; i++) {
-	        JButton temp = new JButton(new ImageIcon("resources/lback.png"));
-	        temp.setBorder(null);
-	        temp.setContentAreaFilled(false);
-	        temp.setBorderPainted(false);
-	        temp.setAlignmentX(Component.CENTER_ALIGNMENT);
-	        northPanel.add(temp);
-	        northPanel.add(Box.createVerticalStrut(0));
-	    }
-
-	    JButton cardButton = new JButton(new ImageIcon("resources/back.png"));
+	    cardPanel.setOpaque(false);
+	    JButton cardButton = new JButton(new ImageIcon(name));
+	    System.out.println("card" + name);
 	    cardButton.setBorder(null);
-	    cardButton.setOpaque(false);
 	    cardButton.setContentAreaFilled(false);
 	    cardButton.setBorderPainted(false);
-	    cardButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+	    cardPanel.add(cardButton);
 
-	    // Add button to the center
-	    northPanel.add(cardButton);
+	    return cardPanel;
+	}
+	
+	// Card pile
+	public JPanel createCardPile(List<String> cardImages) {
+	    int count = 0;
+	    JPanel cardPanel = new JPanel(new GridBagLayout());
 
-	    // Create a container panel to hold both the scoreboardPanel and northPanel
-	    JPanel containerPanel = new JPanel();
-	    containerPanel.setLayout(new BorderLayout());
-	    containerPanel.setOpaque(false);
+	    for (String fullCard : cardImages) {
+	        if (count >= 1) {
+	            break;
+	        }
 
-	    // Add scoreboardPanel to the top-left corner
-	    containerPanel.add(scoreboardPanel, BorderLayout.NORTH);
+	        cardPanel.setOpaque(false);
+	        JButton cardButton = new JButton(new ImageIcon(fullCard));
+	        cardButton.setBorder(null);
+	        cardButton.setContentAreaFilled(false);
+	        cardButton.setBorderPainted(false);
+	        cardPanel.add(cardButton);
 
-	    // Add northPanel to the center
-	    containerPanel.add(northPanel, BorderLayout.CENTER);
+	        count++;
+	    }
 
-	    // Add container panel to background label
-	    getContentPane().add(containerPanel, BorderLayout.NORTH);
+	    return cardPanel;
 	}
 
+
 	
+	public void cardView() {
+		// Create a panel for center cards
+		JPanel centerCardsPanel = new JPanel(new GridBagLayout());
+		centerCardsPanel.setOpaque(false);
+
+		// Create constraints for centering
+		GridBagConstraints gbc = new GridBagConstraints();
+		gbc.gridx = 0;
+		gbc.gridy = 0;
+		gbc.insets = new Insets(0, 0, 0, 40);
+
+		// Add deck to the center
+		//centerCardsPanel.add(setCardImage(haftCard, FullCard), gbc);
+
+		// Add pile to the center
+		gbc.gridx = 1;
+		gbc.insets = new Insets(0, 40, 0, 0);
+		//centerCardsPanel.add(createCardPile(), gbc);
+
+		// Add the center cards panel to the center of the frame
+		center.add(centerCardsPanel, BorderLayout.CENTER);
+	}
 	
-	// Chat box Method
-		public void chatBox() {
-			JDialog chatDialog = new JDialog(this, "Chat Box", false);
-	        chatDialog.setLayout(new BorderLayout());
-	        chatDialog.setSize(350, 300);
+	// Accessor for languageBox variable
+	public JComboBox<String> getLanguageBox() {
+		return languageBox;
+	}
 
-	        JTextArea chatArea = new JTextArea(22, 28);
-	        chatArea.setEditable(false);
-	        JScrollPane scrollPane = new JScrollPane(chatArea);
+	// Accessor for FileMenu
+	public JMenu getFileMenu() {
+		return fileMenu;
+	}
 
-	        JTextField chatInput = new JTextField();
-	        chatInput.addActionListener(new ActionListener() {
-	            @Override
-	            public void actionPerformed(ActionEvent e) {
-	                String text = chatInput.getText();
-	                chatArea.append("You: " + text + "\n");
-	                chatInput.setText("");
-	            }
-	        });
+	// Accessor for HelpMenu
+	public JMenu getHelpMenu() {
+		return helpMenu;
+	}
 
-	        chatDialog.add(scrollPane, BorderLayout.CENTER);
-	        chatDialog.add(chatInput, BorderLayout.SOUTH);
+	// Accessor for NewItem_1
+	public JMenuItem getNewItem_1() {
+		return newItem_1;
+	}
 
-	        // Set the location of the dialog to the bottom-right corner of the screen
-	        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-	        int x = screenSize.width - chatDialog.getWidth();
-	        int y = screenSize.height - chatDialog.getHeight();
-	        chatDialog.setLocation(x, y);
+	// Accessor for NewItem_2
+	public JMenuItem getNewItem_2() {
+		return newItem_2;
+	}
 
-	        chatDialog.setVisible(true);
+	// Accessor for NewItem_3
+	public JMenuItem getNewItem_3() {
+		return newItem_3;
+	}
 
-	        // Ensure the dialog is disposed when closed
-	        chatDialog.addWindowListener(new WindowAdapter() {
-	            @Override
-	            public void windowClosing(WindowEvent e) {
-	                chatDialog.dispose();
-	            }
-	        });
-	    }
+	// Accessor for NewItem_4
+	public JMenuItem getNewItem_4() {
+		return newItem_4;
+	}
+
+	// Accessor for SubMenu
+	public JMenu getSubMenu() {
+		return subMenu;
+	}
+
+	// Accessor for NewItem_5
+	public JMenuItem getNewItem_5() {
+		return newItem_5;
+	}
+
+	// Accessor for ExitItem
+	public JMenuItem getExitItem() {
+		return exitItem;
+	}
+
+	public JPanel getDownPanel() {return down;}
+
+	public JPanel getLeftPanel() {return left;}
+
+	public JPanel getRightPanel() {return right;}
+
+	public JPanel getTopPanel() {return top;}
+
+	public JPanel getCenterPanel() {return center;}
+
+	public JButton getButton1() {return button1;}
+
+	public JButton getButton2() {return button2;}
+
+	public JButton getButton3() {return button3;}
+	
+	public JButton getEastButton() {return eastButton;}
+	
+	public JButton getWestButton() {return westButton;}
+	
+	public JWindow getSplashScreen() {return splashScreen;}
+	
+	public JLabel[] getPlayerScoreLabels() {return playerScoreLabels;}
+	
+	public List<JButton> getHalfCardButtons() {return halfCardButtons;}
+	
+	public JPanel getSoutPanel() {return southPanel;}
+	
+	public JPanel getScoreboardPanel() {return scoreboardPanel;}
+	
+	public JLabel getLabel() {return label;}
+	
+	public JLabel getPlayerLabel() {return playerLabel;}
+	
+	public void changeButtonBackground(JButton button, Color color) {
+        button.setBackground(color); 
+    }
+
+	public ImageIcon getHaftCard() {
+		return haftCard;
+	}
+
+	public void setHaftCard(String haftCardImage) {
 		
-		
-		
+		this.haftCard = new ImageIcon(haftCardImage);
+	}
+
+	public ImageIcon getFullCard() {
+		return FullCard;
+	}
+
+	public void setFullCard(String fullCardImage) {
+		FullCard = new ImageIcon(fullCardImage);
+	}
 }

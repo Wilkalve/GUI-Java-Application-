@@ -1,1 +1,1 @@
-typeSearchIndex = [{"l":"All Classes and Interfaces","u":"allclasses-index.html"},{"p":"gui_app","l":"CrasyEigthsGame"},{"p":"gui_app","l":"UI_Frame"}];updateSearchResults();
+typeSearchIndex = [{"l":"All Classes and Interfaces","u":"allclasses-index.html"},{"p":"model_","l":"Card"},{"p":"gui_app","l":"CrasyEigthsGame"},{"p":"controller_","l":"Deck"},{"p":"controller_","l":"GameController"},{"p":"model_","l":"GameModel"},{"p":"model_","l":"Player"},{"p":"gui_app","l":"UI_Frame"}];updateSearchResults();

@@ -1,3 +1,7 @@
 #             Patch Notes
              ------------
+#             
 1- UI changes: change number of player from three to four opponents.
+2- Score panel: modify the score panel to accommodate four player
+2- UI frame size: resize the UI frame to 908pxl X 808pxl.
+
