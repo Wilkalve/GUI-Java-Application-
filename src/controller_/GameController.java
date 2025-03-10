@@ -1,48 +1,63 @@
 package controller_;
 
-import gui_app.UI_Frame;
+import model_.Card;
 import model_.GameModel;
-
-import javax.swing.*;
-import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
+import javax.swing.JOptionPane;
+
+import gui_app.UI_Frame;
+
 public class GameController implements ActionListener {
     private final GameModel model;
     private final UI_Frame view;
-    private String selectedLanguage;
-    private  Locale locale;
     private final Map<String, Runnable> actionHandlers = new HashMap<>();
-    private int playerCount = 0;
+    private String selectedLanguage;
+    private Locale locale;
 
-    public GameController() {
-        this.model = GameModel.getInstance();
-        this.view = UI_Frame.getInstance();
-   	  
-        
+    public GameController(GameModel model, UI_Frame view) {
+        this.model = model;
+        this.view = view;
+
         if (this.model == null || this.view == null) {
             throw new IllegalStateException("Failed to initialize model or view");
         }
+        model.setUI_Frame(view);
 
-        this.model.setUIFrame(view);
-        initializeUI();
         initializeActionHandlers();
-        
-        model.startGame(4);
+        initializeUI();
+        attachListeners();
     }
 
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        String command = e.getActionCommand();
+          if (e.getSource() == view.getLanguageBox()) {
+            handleLanguageChange();
+            return;
+        }
+
+        Runnable action = actionHandlers.get(command);
+        if (action != null) {
+            action.run();
+        } else {
+            System.out.println("Unknown command: " + command);
+        }
+    }
+    
+
     private void initializeUI() {
-    	
         addActionListeners();
         view.getButton1().setActionCommand("1");
         view.getButton2().setActionCommand("2");
         view.getButton3().setActionCommand("3");
         view.getEastButton().setActionCommand("StartGame");
         view.getWestButton().setActionCommand("Chat");
+       
     }
 
     private void addActionListeners() {
@@ -54,111 +69,129 @@ public class GameController implements ActionListener {
         view.getNewItem_5().addActionListener(this);
         view.getExitItem().addActionListener(this);
         view.getLanguageBox().addActionListener(this);
-        
+        view.getLabel();
+
         // Buttons actions listener
         view.getButton1().addActionListener(this);
         view.getButton2().addActionListener(this);
         view.getButton3().addActionListener(this);
         view.getEastButton().addActionListener(this);
         view.getWestButton().addActionListener(this);
+
+       
         
     }
 
     private void initializeActionHandlers() {
-        // Action handler for menu items
-        actionHandlers.put("NewItem_1", this::handleNewItem1);
-        actionHandlers.put("NewItem_2", this::handleNewItem2);
-        actionHandlers.put("NewItem_3", this::handleNewItem3);
-        actionHandlers.put("NewItem_4", this::handleNewItem4);
-        actionHandlers.put("NewItem_5", this::handleNewItem5);
-        actionHandlers.put("Exit", model::exitGame);
-
-        // Action handler for buttons items
-        actionHandlers.put("1", this::handlePlayerSelection1);
-        actionHandlers.put("2", this::handlePlayerSelection2);
-        actionHandlers.put("3", this::handlePlayerSelection3);
+        actionHandlers.put("HowToPlay", this::handleHowToPlay);
+        actionHandlers.put("NewGame", this::handleNewGame);
+        actionHandlers.put("Hint", this::handleHint);
+        actionHandlers.put("Reset", this::handleReset);
+        actionHandlers.put("About", this::handleAbout);
+        actionHandlers.put("Exit", this::handleExit);
+        actionHandlers.put("SelectPlayers", this::handlePlayerSelection);
         actionHandlers.put("StartGame", this::handleStartGame);
         actionHandlers.put("Chat", this::handleChat);
+        actionHandlers.put("DrawCard", this::handleDrawCard);
     }
 
-  
     private void handleLanguageChange() {
-        selectedLanguage = (String) view.getLanguageBox().getSelectedItem();
-        locale = selectedLanguage.equals("French (français)") ? new Locale("fr") : Locale.ENGLISH;
-        model.changeLanguage(locale);
-           
+         selectedLanguage = (String) view.getLanguageBox().getSelectedItem();
+            locale = selectedLanguage.equals("French (français)") ? new Locale("fr") : Locale.ENGLISH;
+            model.changeLanguage(locale);
     }
     
-    @Override
-    public void actionPerformed(ActionEvent e) {
-        String command = e.getActionCommand();
-        if ("comboBoxChanged".equals(command)) {
-            handleLanguageChange();
-        } else {
-            Runnable action = actionHandlers.get(command);
-            if (action == null) {
-                System.out.println("Unknown command: " + command);
+    
+    
+    private void attachListeners() {
+//        view.addDrawCardButtonListener(new DrawCardListener());
+//        view.addToggleOpponentHandsButtonListener(new ToggleOpponentHandsListener());
+//        view.addNewGameMenuItemListener(new NewGameMenuItemListener());
+        
+    }
+
+    class DrawCardListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            // Example:
+            if(model.isGameRunning()) {
+                model.drawCard(model.getCurrentPlayer());
+                //view.updateView();
             } else {
-                action.run();
+                JOptionPane.showMessageDialog(view, "Game not started!");
             }
+
         }
     }
     
-    private void handleNewItem1() {
-        // Handle action for NewItem_1
+    
+    class ToggleOpponentHandsListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            //view.toggleOpponentHands(); // Update the view's state
+            //view.updateView(); // Refresh the view
+        }
     }
 
-    private void handleNewItem2() {
-        // Handle action for NewItem_2
+    class NewGameMenuItemListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            model.startNewGame(); 
+            //view.updateView(); 
+        }
     }
 
-    private void handleNewItem3() {
-        // Handle action for NewItem_3
+    
+    public void handleCardSelected(Card selectedCard) {
+        // Logic to handle when a card is selected in the UI
+        // Validate if the card can be played
+        // Update the model
+        // Update the view
     }
 
-    private void handleNewItem4() {
-        // Handle action for NewItem_4
+    private void handleHowToPlay() {
+        // model.showHowToPlay();
     }
 
-    private void handleNewItem5() {
-        JOptionPane.showMessageDialog(null, model.getAboutMessage(), "About", JOptionPane.INFORMATION_MESSAGE);
+    private void handleNewGame() {
+        // model.startNewGame();
     }
 
-    private void handlePlayerSelection1() {
-        System.out.println("2 players selected");
-        playerCount = 2;
-        view.changeButtonBackground(view.getButton1(), Color.ORANGE);
-        view.changeButtonBackground(view.getButton2(), null);
-        view.changeButtonBackground(view.getButton3(), null);
+    private void handleHint() {
+        // model.provideHint();
     }
 
-    private void handlePlayerSelection2() {
-        System.out.println("3 players selected");
-        playerCount = 3;
-        view.changeButtonBackground(view.getButton1(), null);
-        view.changeButtonBackground(view.getButton2(), Color.YELLOW);
-        view.changeButtonBackground(view.getButton3(), null);
+    private void handleReset() {
+        // model.resetGame();
     }
 
-    private void handlePlayerSelection3() {
-        System.out.println("4 players selected");
-        playerCount = 4;
-        view.changeButtonBackground(view.getButton1(), null);
-        view.changeButtonBackground(view.getButton2(), null);
-        view.changeButtonBackground(view.getButton3(), Color.MAGENTA);
+    private void handleAbout() {
+        // model.showAboutInfo();
+    }
+
+    private void handleExit() {
+        model.exitGame();
+    }
+
+    private void handlePlayerSelection() {
+       // int playerCount = view.getSelectedPlayerCount();
+        // model.setPlayerCount(playerCount);
     }
 
     private void handleStartGame() {
-        if (playerCount > 0) {
-            System.out.println("Starting game with " + playerCount + " players.");
-            view.setUpCards(playerCount);
-            // Additional game start logic here
-        } else {
-            JOptionPane.showMessageDialog(null, model.getStartMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        }
+        // if (model.canStartGame()) {
+        //     model.startGame();
+        // } else {
+        //     view.showErrorMessage(model.getStartMessage());
+        // }
     }
 
     private void handleChat() {
-        // Implement chat functionality
+        //String message = view.getChatMessage();
+        // model.sendChatMessage(message);
+    }
+
+    private void handleDrawCard() {
+        model.drawCard(null);
     }
 }

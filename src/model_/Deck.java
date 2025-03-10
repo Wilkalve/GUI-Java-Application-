@@ -5,19 +5,29 @@ import java.util.Collections;
 import java.util.List;
 
 /* Hold and manage the collection of Card Objects*/
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class Deck {
     private List<Card> cards;
-
+    private static Deck instance;
+    private final String[] suits = {"c", "d", "h", "s"};
+    private final String[] ranks = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "J", "Q", "K"};
+    
     public Deck() {
         cards = new ArrayList<>();
         initializeDeck();
     }
 
-    private void initializeDeck() {
-        String[] suits = {"c", "d", "h", "s"};
-        String[] ranks = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "J", "Q", "K"};
+    public static Deck getInstance() {
+        if (instance == null) {
+            instance = new Deck();
+        }
+        return instance;
+    }
 
+    private void initializeDeck() {
         for (String suit : suits) {
             for (String rank : ranks) {
                 String cardCode = rank + suit;
@@ -44,4 +54,11 @@ public class Deck {
     public List<Card> getCards() {
         return cards;
     }
+
+    public void resetDeck() {
+        cards.clear(); 
+        initializeDeck(); 
+        shuffle(); 
+    }
 }
+

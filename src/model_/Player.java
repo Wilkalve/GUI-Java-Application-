@@ -3,27 +3,28 @@ package model_;
 import java.util.List;
 import java.util.ArrayList;
 
-class Player {
+public class Player {
     private String name;
     private List<Card> hand;
+    private int score;
 
     // Constructor
-    public Player(String playerName) {
-        this.name = playerName;
+    public Player(String name2) {
+        this.name = name2;
         this.hand = new ArrayList<>();
+        this.score = 0;
     }
 
     // Add card to player's hand
     public void addCardToHand(Card card) {
         hand.add(card);
     }
-
-    // Check if player's hand is empty
-    public Card playCard() {
-        if (hand.isEmpty()) {
-            return null;
-        }
-        return hand.remove(hand.size() - 1);
+ public Player() {
+	
+}
+    // remove card from player hand
+    public void playCard(Card card) {
+         hand.remove(card);
     }
 
     // Getters and Setters
@@ -41,5 +42,13 @@ class Player {
 
     public void setHand(List<Card> hand) {
         this.hand = hand;
+    }
+    
+    public int getScore() {
+        return score;
+    }
+
+    public void setScore(int score) {
+        this.score = score;
     }
 }
