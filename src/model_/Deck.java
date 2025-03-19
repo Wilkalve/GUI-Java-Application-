@@ -3,17 +3,14 @@ package model_;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
+import java.util.Random;
 /* Hold and manage the collection of Card Objects*/
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 public class Deck {
     private List<Card> cards;
     private static Deck instance;
-    private final String[] suits = {"c", "d", "h", "s"};
-    private final String[] ranks = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "J", "Q", "K"};
+    private final String[] suits = {"C", "D", "H", "S"};
+    private final String[] ranks = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "J", "Q", "K", "A"};
     
     public Deck() {
         cards = new ArrayList<>();
@@ -54,11 +51,19 @@ public class Deck {
     public List<Card> getCards() {
         return cards;
     }
-
+public String[] getSuit() {
+	return suits;
+}
+public String[] getRank() {
+	return ranks;
+}
     public void resetDeck() {
         cards.clear(); 
         initializeDeck(); 
         shuffle(); 
     }
+    
+   
+    
 }
 

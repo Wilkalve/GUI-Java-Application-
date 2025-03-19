@@ -18,7 +18,7 @@ public class SplashScreen extends JWindow {
 	private ImageIcon backgroundImage;
 
 	public SplashScreen() {
-		backgroundImage = new ImageIcon("bk_1.jpg");
+		backgroundImage = new ImageIcon("resources/bk_1.jpg");
 
 		JPanel contentPane = new JPanel(new BorderLayout()) {
 			/**

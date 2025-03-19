@@ -2,6 +2,10 @@
              ------------
 #             
 1- UI changes: change number of player from three to four opponents.
-2- Score panel: modify the score panel to accommodate four player
-2- UI frame size: resize the UI frame to 908pxl X 808pxl.
+2- Score panel: modify the score panel to accommodate four player and move it to the east north panel
+3- UI frame size: resize the UI frame to 908pxl X 808pxl.
+4- Modify the ui to include three button to select the number of player at the start of the game
+5- Created an interface class.
+6- 
+
 
