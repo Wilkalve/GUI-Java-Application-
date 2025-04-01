@@ -7,63 +7,64 @@ import java.util.Random;
 /* Hold and manage the collection of Card Objects*/
 
 public class Deck {
-    private List<Card> cards;
-    private static Deck instance;
-    private final String[] suits = {"C", "D", "H", "S"};
-    private final String[] ranks = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "J", "Q", "K", "A"};
-    
-    public Deck() {
-        cards = new ArrayList<>();
-        initializeDeck();
-    }
+	private List<Card> cards;
+	private static Deck instance;
+	private final String[] suits = { "C", "D", "H", "S" };
+	private final String[] ranks = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "J", "Q", "K", "A" };
 
-    public static Deck getInstance() {
-        if (instance == null) {
-            instance = new Deck();
-        }
-        return instance;
-    }
+	public Deck() {
+		cards = new ArrayList<>();
+		initializeDeck();
+	}
 
-    private void initializeDeck() {
-        for (String suit : suits) {
-            for (String rank : ranks) {
-                String cardCode = rank + suit;
-                cards.add(new Card("l" + cardCode, "", "resources/l" + cardCode + ".png", "resources/" + cardCode + ".png"));
-            }
-        }
-    }
+	public static synchronized Deck getInstance() {
+		if (instance == null) {
+			instance = new Deck();
+		}
+		return instance;
+	}
 
-    public void shuffle() {
-        Collections.shuffle(cards);
-    }
+	private void initializeDeck() {
+		for (String suit : suits) {
+			for (String rank : ranks) {
+				String cardCode = rank + suit;
+				cards.add(new Card("l" + cardCode, "", "resources/l" + cardCode + ".png",
+						"resources/" + cardCode + ".png"));
+			}
+		}
+	}
 
-    public Card drawCard() {
-        if (!cards.isEmpty()) {
-            return cards.remove(0);
-        }
-        return null;
-    }
+	public void shuffle() {
+		Collections.shuffle(cards);
+	}
 
-    public int remainingCards() {
-        return cards.size();
-    }
+	public Card drawCard() {
+		if (!cards.isEmpty()) {
+			return cards.remove(0);
+		}
+		return null;
+	}
 
-    public List<Card> getCards() {
-        return cards;
-    }
-public String[] getSuit() {
-	return suits;
+	public int remainingCards() {
+		return cards.size();
+	}
+
+	public List<Card> getCards() {
+		return cards;
+	}
+
+	public String[] getSuit() {
+		return suits;
+	}
+
+	public String[] getRank() {
+		return ranks;
+	}
+
+	public void resetDeck() {
+		cards.clear();
+		initializeDeck();
+		shuffle();
+	}
+
 }
-public String[] getRank() {
-	return ranks;
-}
-    public void resetDeck() {
-        cards.clear(); 
-        initializeDeck(); 
-        shuffle(); 
-    }
-    
-   
-    
-}
-

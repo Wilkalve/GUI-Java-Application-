@@ -14,11 +14,6 @@ public class Card {
 		this.halfCardImage = haftCard;
 		this.fullCardImage = fullCard;
 	}
-
-	public Card() {
-
-	}
-
 	
   public String getSuit() {
 	  return suit;

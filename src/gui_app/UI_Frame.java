@@ -12,6 +12,9 @@ import java.awt.GridLayout;
 import java.awt.Image;
 import java.awt.Insets;
 import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -22,6 +25,7 @@ import java.util.ResourceBundle;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -33,14 +37,18 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.JWindow;
+import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 
+import controller_.ServerSide;
 import model_.Card;
 import model_.Deck;
 import model_.GameModel;
@@ -48,7 +56,7 @@ import model_.Player;
 import model_.GameModel.GameState;
 
 public class UI_Frame extends JFrame implements GameObserver {
-
+	//private ServerSide serv;
 	/**
 	 * 
 	 */
@@ -57,7 +65,7 @@ public class UI_Frame extends JFrame implements GameObserver {
 	private GameModel model;
 
 	private JWindow splashScreen;
-	private JMenu fileMenu, helpMenu, subMenu;
+	private JMenu fileMenu, helpMenu, subMenu, hostGame, connect;
 	private JMenuItem newItem_1, newItem_2, newItem_3, newItem_4, newItem_5, exitItem;
 	private JPanel southPanel;
 	private JComboBox<String> languageBox;
@@ -66,9 +74,9 @@ public class UI_Frame extends JFrame implements GameObserver {
 	private JPanel northPanel, eastPanel, westPanel, top, down, left, right, mainPanel;
 	// private JLabel statusLabel;
 	private Map<String, JToggleButton> showCardButtons;
-	private JTextField chatInput = new JTextField();
-	private JTextArea chatArea = new JTextArea();
-	private JDialog chatDialog = new JDialog();
+	private  JRadioButtonMenuItem  startServerItem, joinGame;
+	private  JRadioButtonMenuItem  endServerItem;
+	
 
 	private JLabel label;
 	private JButton cardLabel;
@@ -76,30 +84,28 @@ public class UI_Frame extends JFrame implements GameObserver {
 	private JLabel statusLabel, deckLabel, pileLabel;
 	private JLabel[] playerScoreLabels;
 	private int playerNumber;
-	private List<JButton> halfCards = new ArrayList<>();
-	private List<JButton> roverCards = new ArrayList<>();
-	private List<JButton> fullCards = new ArrayList<>();
-	private List<JButton> fullRover = new ArrayList<>();
-	private List<JButton> playercard = new ArrayList<>();
-	private List<JButton> fTCard = new ArrayList();
+	private List<JButton> halfCards;
+	private List<JButton> roverCards;
+	private List<JButton> fullCards;
+	private List<JButton> fullRover;
+	private List<JButton> playercard;
+	private List<JButton> fTCard;
 
 	private Deck deck;
 	private Card pileCard;
 	private ResourceBundle messages;
 	private JButton sendButton;
-	private String playerName;
 	private JPanel chatPanel;
 	Locale locale;
-	private JPanel eastCardPanel;
-	private JPanel westCardPanel;
-
 	private Player firstPlayer, secondPlayer, thirdPlayer, fourthPlayer;
 
 	public UI_Frame() {
 		splashScreen = new JWindow();
 		locale = new Locale("French (français)") != null ? new Locale("fr") : Locale.ENGLISH;
 		messages = ResourceBundle.getBundle("MessagesBundle", locale);
-
+		
+	
+		
 		mainPanel = new JPanel(new BorderLayout());
 		mainPanel.setOpaque(false);
 		northPanel = new JPanel(new BorderLayout());
@@ -110,10 +116,18 @@ public class UI_Frame extends JFrame implements GameObserver {
 		southPanel.setOpaque(false);
 		westPanel = new JPanel(new BorderLayout());
 		westPanel.setOpaque(false);
+
+		halfCards = new ArrayList<>();
+		roverCards = new ArrayList<>();
+		fullCards = new ArrayList<>();
+		fullRover = new ArrayList<>();
+		playercard = new ArrayList<>();
+		fTCard = new ArrayList();
+		
 	}
 
 	// Method to get the single instance of UI_Frame
-	public static UI_Frame getInstance() {
+	public static synchronized UI_Frame getInstance() {
 		if (instance == null) {
 			instance = new UI_Frame();
 		}
@@ -139,7 +153,8 @@ public class UI_Frame extends JFrame implements GameObserver {
 		setExtendedState(JFrame.MAXIMIZED_BOTH);
 		ImageIcon icon = new ImageIcon("resources/Kd.png");
 		setIconImage(icon.getImage());
-		setResizable(false);
+		//setResizable(false);
+		
 		Color cardTableGreen = new Color(0, 100, 35);
 		getContentPane().setBackground(cardTableGreen);
 
@@ -147,11 +162,6 @@ public class UI_Frame extends JFrame implements GameObserver {
 
 		setShowCardButtons(new HashMap<>());
 		deck = new Deck();
-
-		// Initialize Deck and Pile
-		if (model != null) {
-			pileCard = model.getDiscardPileTop();
-		}
 
 		// Initialize center panel
 		JPanel centerPanel = new JPanel(new GridBagLayout());
@@ -164,7 +174,10 @@ public class UI_Frame extends JFrame implements GameObserver {
 		ImageIcon deckIcon = new ImageIcon("resources/back.png");
 		deckLabel = new JLabel(deckIcon);
 
-		pileLabel = new JLabel(new ImageIcon(pileCard.getFullCardImage()));
+		pileCard = model.getDiscardPileTop();
+
+		ImageIcon pileIcon = new ImageIcon(pileCard.getFullCardImage());
+		pileLabel = new JLabel(pileIcon);
 
 		// Deck and Pile Panel
 		JPanel deckPilePanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 100));
@@ -201,12 +214,8 @@ public class UI_Frame extends JFrame implements GameObserver {
 		centerPanel.add(statusLabel, gbc);
 
 		fileMenu();
-		scorePanel();
-		initializeNorthPanel();
 		setupSouthPanel();
-		addCardsToWestCenter();
-		addCardsToEastCenter();
-
+		initializeNorthPanel();
 		setLocationRelativeTo(null);
 	}
 
@@ -226,17 +235,23 @@ public class UI_Frame extends JFrame implements GameObserver {
 			break;
 		case GAME_OVER:
 			handleGameOver();
+		
+			
 			break;
 		case GAME_STARTED:
 			if (!this.isVisible()) {
 				initializeComponents();
 				this.setVisible(true);
-
+				
+			
 			}
 			break;
 
 		case OPPONENT_HANDS:
-			// updateOpponentHands();
+			displaySecondPlayerCards();
+			addCardsToEastCenter();
+			addCardsToWestCenter();
+			
 			break;
 		case SUIT_SELECTED:
 			break;
@@ -268,6 +283,9 @@ public class UI_Frame extends JFrame implements GameObserver {
 
 		fileMenu = new JMenu("Menu");
 		helpMenu = new JMenu("Help");
+	    hostGame = new JMenu("Host Game");
+	    connect = new JMenu("Join game");
+	    
 
 		newItem_1 = new JMenuItem("How to play");
 		newItem_2 = new JMenuItem("New Game");
@@ -296,7 +314,28 @@ public class UI_Frame extends JFrame implements GameObserver {
 
 		menubar.add(fileMenu);
 		menubar.add(helpMenu);
+		menubar.add(hostGame);
+		menubar.add(connect);
+		
+		
+		
+		startServerItem = new JRadioButtonMenuItem("Start Server");
+	    endServerItem = new JRadioButtonMenuItem("End Connection");
+	    joinGame = new JRadioButtonMenuItem("Connect");
+	     
+	        
+	        ButtonGroup group = new ButtonGroup();
+	        group.add(startServerItem);
+	        group.add(endServerItem);
+	        group.add(joinGame);
+	        
 
+	        // Add the JRadioButtonMenuItems to the JMenu
+	        hostGame.add(startServerItem);
+	        hostGame.add(endServerItem);
+	        connect.add(joinGame);
+
+		
 		JPanel languagePanel = new JPanel();
 		languagePanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
 
@@ -329,36 +368,64 @@ public class UI_Frame extends JFrame implements GameObserver {
 		}
 	}
 
+	// Method to display card north and south when the player click the button
+	public void defaultPlayer() {
+		JPanel playerCardPanel = displaySecondPlayerCards();
+		northPanel.add(playerCardPanel, BorderLayout.CENTER);
+		JPanel playerPanel = displayPlayerCards();
+		southPanel.add(playerPanel, BorderLayout.CENTER);
+
+		mainPanel.add(northPanel, BorderLayout.NORTH);
+		mainPanel.add(southPanel, BorderLayout.SOUTH);
+
+		mainPanel.revalidate();
+		mainPanel.repaint();
+	}
+
 	public void setupSouthPanel() {
-    String start = model.getStartGame();
+		String start = model.getStartGame();
 		JPanel southPanel = new JPanel(new BorderLayout());
 		southPanel.setOpaque(false);
 		southPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
 
+		// Start Game button on the west
 		JPanel westButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 		westButtonPanel.setOpaque(false);
 		westButton = new JButton(start);
 		westButton.setPreferredSize(new Dimension(100, 30));
 		westButtonPanel.add(westButton);
 
+		// Chat button on the east
 		JPanel eastButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 		eastButtonPanel.setOpaque(false);
 		eastButton = new JButton("chat");
 		eastButton.setPreferredSize(new Dimension(100, 30));
 		eastButtonPanel.add(eastButton);
 
+		// Add button panels to the south panel
 		southPanel.add(westButtonPanel, BorderLayout.WEST);
 		southPanel.add(eastButtonPanel, BorderLayout.EAST);
 
+		// Add the south panel to the main panel
+		mainPanel.add(southPanel, BorderLayout.SOUTH);
+
+		mainPanel.revalidate();
+		mainPanel.repaint();
+	}
+
+	// Display card south
+	private JPanel displayPlayerCards() {
 		JPanel cardContainer = new JPanel(new BorderLayout());
 		cardContainer.setOpaque(false);
 
+		// Player name
 		JLabel playerNameLabel = new JLabel(firstPlayer.getName(), SwingConstants.CENTER);
 		playerNameLabel.setFont(new Font("Arial", Font.BOLD, 14));
 		playerNameLabel.setForeground(Color.WHITE);
 		cardContainer.add(playerNameLabel, BorderLayout.NORTH);
 
-		JPanel cardPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, -32, 0));
+		// Player's cards
+	   cardPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, -31, 0));
 		cardPanel.setOpaque(false);
 
 		List<Card> hand = firstPlayer.getHand();
@@ -378,7 +445,6 @@ public class UI_Frame extends JFrame implements GameObserver {
 		}
 
 		Card fullImage = firstPlayer.getHand().get(0);
-
 		JButton fullCard = new JButton(new ImageIcon(fullImage.getFullCardImage()));
 		fullCard.setOpaque(false);
 		fullCard.setContentAreaFilled(false);
@@ -390,115 +456,103 @@ public class UI_Frame extends JFrame implements GameObserver {
 
 		cardContainer.add(cardPanel, BorderLayout.CENTER);
 
-		southPanel.add(cardContainer, BorderLayout.CENTER);
-
-		mainPanel.add(southPanel, BorderLayout.SOUTH);
-
-		mainPanel.revalidate();
-		mainPanel.repaint();
+		return cardContainer;
 	}
 
-	public void scorePanel() {
-		JPanel northPanel = new JPanel(new BorderLayout());
-		northPanel.setBackground(new Color(0, 100, 35));
-		northPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-
-		JPanel scorePanel = new JPanel(new GridLayout(4, 1, 5, 5));
-		scorePanel.setOpaque(false);
-		scorePanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-
-		JLabel[] playerScoreLabels = new JLabel[4];
-		for (int i = 0; i < 4; i++) {
-			playerScoreLabels[i] = new JLabel("Player " + (i + 1) + ": 0");
-			playerScoreLabels[i].setFont(new Font("Arial", Font.BOLD, 12));
-			playerScoreLabels[i].setForeground(Color.WHITE);
-			scorePanel.add(playerScoreLabels[i]);
-		}
-
-		northPanel.add(scorePanel, BorderLayout.EAST);
-
-		mainPanel.add(northPanel, BorderLayout.NORTH);
-
-		mainPanel.revalidate();
-		mainPanel.repaint();
-	}
 
 	public void initializeNorthPanel() {
+	    northPanel = new JPanel(new BorderLayout());
+	    northPanel.setBackground(new Color(0, 100, 35));
+	    northPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
-		northPanel = new JPanel(new BorderLayout());
-		northPanel.setBackground(new Color(0, 100, 35));
-		northPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+	    JPanel northWestPanel = new JPanel();
+	    northWestPanel.setLayout(new BoxLayout(northWestPanel, BoxLayout.Y_AXIS));
+	    northWestPanel.setOpaque(false);
 
-		JPanel northWestPanel = new JPanel();
-		northWestPanel.setLayout(new BoxLayout(northWestPanel, BoxLayout.Y_AXIS));
-		northWestPanel.setOpaque(false); // Transparent
+	    label = new JLabel("Player Number");
+	    label.setBorder(new EmptyBorder(0, 0, 0, 0));
+	    label.setFont(new Font("Arial", Font.BOLD, 12));
+	    label.setForeground(Color.WHITE);
+	    northWestPanel.add(label);
 
-		label = new JLabel(messages.getString("PlayerNumber"));
-		label.setBorder(new EmptyBorder(0, 0, 0, 0));
-		label.setFont(new Font("Arial", Font.BOLD, 12));
-		label.setForeground(Color.WHITE);
-		northWestPanel.add(label);
+	    JPanel buttonPanel = new JPanel(new GridLayout(3, 1, 5, 5));
+	    buttonPanel.setOpaque(false);
+	    buttonPanel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
-		JPanel buttonPanel = new JPanel(new GridLayout(3, 1, 5, 5));
-		buttonPanel.setOpaque(false);
-		buttonPanel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+	    button1 = new JButton("2");
+	    button2 = new JButton("3");
+	    button3 = new JButton("4");
+	    buttonPanel.add(button1);
+	    buttonPanel.add(button2);
+	    buttonPanel.add(button3);
 
-		// Add buttons to the buttonPanel
-		button1 = new JButton("2");
-		button2 = new JButton("3");
-		button3 = new JButton("4");
-		buttonPanel.add(button1);
-		buttonPanel.add(button2);
-		buttonPanel.add(button3);
+	    northWestPanel.add(buttonPanel);
+	    northPanel.add(northWestPanel, BorderLayout.WEST);
 
-		northWestPanel.add(buttonPanel);
-		northPanel.add(northWestPanel, BorderLayout.WEST);
+	   
+	    JPanel scorePanel = createScorePanel();
+	    northPanel.add(scorePanel, BorderLayout.EAST);
 
-		JPanel scorePanel = new JPanel(new GridLayout(4, 1, 5, 5));
-		scorePanel.setOpaque(false);
-		scorePanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+	    mainPanel.add(northPanel, BorderLayout.NORTH);
 
-		// Add player score labels
-		JLabel[] playerScoreLabels = new JLabel[4];
-		for (int i = 0; i < 4; i++) {
-			playerScoreLabels[i] = new JLabel("Score " + (i + 1) + model.getCurrentPlayer().getScore());
-			playerScoreLabels[i].setFont(new Font("Arial", Font.BOLD, 12));
-			playerScoreLabels[i].setForeground(Color.ORANGE);
-			scorePanel.add(playerScoreLabels[i]);
-		}
+	    mainPanel.revalidate();
+	    mainPanel.repaint();
+	}
 
-		northPanel.add(scorePanel, BorderLayout.EAST);
-		
-		
+	private JPanel createScorePanel() {
+	    JPanel scorePanel = new JPanel(new GridLayout(4, 1, 5, 5));
+	    scorePanel.setOpaque(false);
+	    scorePanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
+	    playerScoreLabels = new JLabel[4]; 
+	    for (int i = 0; i < playerScoreLabels.length; i++) {
+	        playerScoreLabels[i] = new JLabel("Score " + (i + 1) + ": 0");
+	        playerScoreLabels[i].setFont(new Font("Arial", Font.BOLD, 12));
+	        playerScoreLabels[i].setForeground(Color.ORANGE);
+	        scorePanel.add(playerScoreLabels[i]);
+	    }
+	    return scorePanel;
+	}
+
+	public void updatePlayerScores(int[] scores) {
+	    for (int i = 0; i < playerScoreLabels.length; i++) {
+	        playerScoreLabels[i].setText("Score " + (i + 1) + ": " + scores[i]);
+	    }
+	    mainPanel.revalidate();
+	    mainPanel.repaint();
+	}
+
+	
+	private JPanel displaySecondPlayerCards() {
 		JPanel cardContainer = new JPanel(new BorderLayout());
 		cardContainer.setOpaque(false);
 
+		// Player name label
 		JLabel playerNameLabel = new JLabel(secondPlayer.getName(), SwingConstants.CENTER);
 		playerNameLabel.setFont(new Font("Arial", Font.BOLD, 12));
 		playerNameLabel.setForeground(Color.WHITE);
 		cardContainer.add(playerNameLabel, BorderLayout.NORTH);
 
-		cardPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, -32, 0));
-		cardPanel.setOpaque(false);
+		// Player's card panel
+		    top = new JPanel(new FlowLayout(FlowLayout.CENTER, -32, 0));
+		   top.setOpaque(false);
 
 		List<Card> hand = secondPlayer.getHand();
 
 		for (int i = 0; i < hand.size(); i++) {
-
-			// Card card = hand.get(i);
 			JButton halfCard = new JButton(new ImageIcon("resources/lback.png"));
 			halfCard.setOpaque(false);
 			halfCard.setContentAreaFilled(false);
 			halfCard.setBorderPainted(false);
 			halfCard.setFocusPainted(false);
+			
 
 			fTCard.add(halfCard);
 			halfCards.add(halfCard);
-			cardPanel.add(halfCard);
+			top.add(halfCard);
 		}
 
-		// Card fullImage = firstPlayer.getHand().get(0);
+		firstPlayer.getHand().get(0);
 		JButton fullCard = new JButton(new ImageIcon("resources/back.png"));
 		fullCard.setOpaque(false);
 		fullCard.setContentAreaFilled(false);
@@ -507,44 +561,26 @@ public class UI_Frame extends JFrame implements GameObserver {
 
 		fullCards.add(fullCard);
 		fTCard.add(fullCard);
-		cardPanel.add(fullCard);
+		top.add(fullCard);
 
-		cardContainer.add(cardPanel, BorderLayout.CENTER);
-
-		northPanel.add(cardContainer, BorderLayout.CENTER);
-
-		mainPanel.add(northPanel, BorderLayout.NORTH);
-
-		mainPanel.revalidate();
-		mainPanel.repaint();
+		cardContainer.add(top, BorderLayout.CENTER);
+		return cardContainer;
 	}
 	
 	
-	public void removeBackDisplayCPU2(Card playedCard) {
-
-		if (!roverCards.isEmpty()) {
-			JButton cardButton = roverCards.remove(0);
-			cardPanel.remove(cardButton);
-			cardPanel.revalidate();
-			cardPanel.repaint();
-			System.out.println("Card removed");
-
-		}
-	}
-
 	public void addCardsToEastCenter() {
 
-		eastCardPanel = new JPanel();
-		eastCardPanel.setLayout(new BoxLayout(eastCardPanel, BoxLayout.Y_AXIS));
-		eastCardPanel.setOpaque(false);
+		right = new JPanel();
+		right.setLayout(new BoxLayout(right, BoxLayout.Y_AXIS));
+		right.setOpaque(false);
 
 		JLabel playerNameLabel = new JLabel(thirdPlayer.getName(), SwingConstants.CENTER);
 		playerNameLabel.setFont(new Font("Arial", Font.BOLD, 14));
 		playerNameLabel.setForeground(Color.WHITE);
 		playerNameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-		eastCardPanel.add(playerNameLabel);
+		right.add(playerNameLabel);
 
-		eastCardPanel.add(Box.createRigidArea(new Dimension(0, 120)));
+		right.add(Box.createRigidArea(new Dimension(0, 120)));
 
 		List<Card> hand = thirdPlayer.getHand();
 
@@ -558,12 +594,12 @@ public class UI_Frame extends JFrame implements GameObserver {
 
 			fTCard.add(halfCard);
 			roverCards.add(halfCard);
-			eastCardPanel.add(halfCard);
+			right.add(halfCard);
 
-			eastCardPanel.add(Box.createRigidArea(new Dimension(0, -9)));
+			right.add(Box.createRigidArea(new Dimension(0, -9)));
 		}
 
-		// Card fullImage = firstPlayer.getHand().get(0);
+		firstPlayer.getHand().get(0);
 		JButton fullCard = new JButton(new ImageIcon("resources/back_2.png"));
 		fullCard.setOpaque(false);
 		fullCard.setContentAreaFilled(false);
@@ -571,40 +607,30 @@ public class UI_Frame extends JFrame implements GameObserver {
 		fullCard.setFocusPainted(false);
 
 		fullRover.add(fullCard);
-		eastCardPanel.add(fullCard);
+		right.add(fullCard);
 		fullCard.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-		mainPanel.add(eastCardPanel, BorderLayout.EAST);
+		mainPanel.add(right, BorderLayout.EAST);
 
 		mainPanel.revalidate();
 		mainPanel.repaint();
 	}
 
-	public void removeCardBackDisplayCPU3(Card playedCard) {
-
-		if (!roverCards.isEmpty()) {
-			JButton cardButton = roverCards.remove(0);
-			eastCardPanel.remove(cardButton);
-			eastCardPanel.revalidate();
-			eastCardPanel.repaint();
-			System.out.println("Card removed");
-
-		}
-	}
+	
 
 	public void addCardsToWestCenter() {
 
-		westCardPanel = new JPanel();
-		westCardPanel.setLayout(new BoxLayout(westCardPanel, BoxLayout.Y_AXIS));
-		westCardPanel.setOpaque(false);
+		left = new JPanel();
+		left.setLayout(new BoxLayout(left, BoxLayout.Y_AXIS));
+		left.setOpaque(false);
 
 		JLabel playerNameLabel = new JLabel(fourthPlayer.getName(), SwingConstants.CENTER);
 		playerNameLabel.setFont(new Font("Arial", Font.BOLD, 12));
 		playerNameLabel.setForeground(Color.WHITE);
 		playerNameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-		westCardPanel.add(playerNameLabel);
+		left.add(playerNameLabel);
 
-		westCardPanel.add(Box.createRigidArea(new Dimension(0, 120)));
+		left.add(Box.createRigidArea(new Dimension(0, 120)));
 
 		List<Card> hand = fourthPlayer.getHand();
 
@@ -618,12 +644,12 @@ public class UI_Frame extends JFrame implements GameObserver {
 
 			fTCard.add(halfCard);
 			roverCards.add(halfCard);
-			westCardPanel.add(halfCard);
+			left.add(halfCard);
 
-			westCardPanel.add(Box.createRigidArea(new Dimension(0, -9)));
+			left.add(Box.createRigidArea(new Dimension(0, -9)));
 		}
 
-		// Card fullImage = firstPlayer.getHand().get(0);
+		firstPlayer.getHand().get(0);
 		JButton fullCard = new JButton(new ImageIcon("resources/back_2.png"));
 		fullCard.setOpaque(false);
 		fullCard.setContentAreaFilled(false);
@@ -632,80 +658,49 @@ public class UI_Frame extends JFrame implements GameObserver {
 		fullCard.setAlignmentX(Component.CENTER_ALIGNMENT);
 
 		fullRover.add(fullCard);
-		westCardPanel.add(fullCard);
+		left.add(fullCard);
 
-		mainPanel.add(westCardPanel, BorderLayout.WEST);
+		mainPanel.add(left, BorderLayout.WEST);
 
 		mainPanel.revalidate();
 		mainPanel.repaint();
 	}
 
-	public void removeDisplayCPU4(Card playedCard) {
+	
+	public void removeOpponentCard(Player opponent) {
+	    // Ensure the opponent has cards in their hand
+	    if (opponent.getHand().isEmpty()) {
+	        System.out.println(opponent.getName() + " has no cards left.");
+	        return;
+	    }
 
-		if (!roverCards.isEmpty()) {
-			JButton cardButton = roverCards.remove(0);
-			westCardPanel.remove(cardButton);
-			westCardPanel.revalidate();
-			westCardPanel.repaint();
-			System.out.println("Card removed");
+	    Card removedCard = opponent.getHand().remove(0);
 
-		}
+	    
+	    JPanel opponentPanel = null;
+	    List<JButton> opponentCardButtons = null;
+
+	    if (opponent.equals(secondPlayer)) {
+	        opponentPanel = top;
+	        opponentCardButtons = fTCard; 
+	    } else if (opponent.equals(thirdPlayer)) {
+	        opponentPanel = left;
+	        opponentCardButtons = fTCard; 
+	    } else if (opponent.equals(fourthPlayer)) {
+	        opponentPanel = right;
+	        opponentCardButtons = fTCard; 
+	    }
+
+	    if (opponentPanel != null && opponentCardButtons != null && !opponentCardButtons.isEmpty()) {
+	        JButton buttonToRemove = opponentCardButtons.remove(0); 
+	        opponentPanel.remove(buttonToRemove);                   
+	        opponentPanel.revalidate();                           
+	        opponentPanel.repaint();
+	    }
+
+	    System.out.println("Card removed from " + opponent.getName() + ": " + removedCard);
 	}
 
-	public String promptPlayerName() {
-
-		String playerName = JOptionPane.showInputDialog(null, "Enter your name:", "Player Setup",
-				JOptionPane.PLAIN_MESSAGE);
-
-		if (playerName == null || playerName.trim().isEmpty()) {
-			playerName = "Default Player";
-		}
-		this.playerName = playerName;
-		return playerName;
-	}
-
-	public void chatBox() {
-		// Create the chat dialog
-		chatDialog = new JDialog(this, "Chat Box");
-		chatDialog.setLayout(new BorderLayout());
-		chatDialog.setSize(600, 600);
-
-		chatArea = new JTextArea(16, 25);
-		chatArea.setEditable(false);
-		JScrollPane scrollPane = new JScrollPane(chatArea);
-
-		chatInput = new JTextField();
-
-		chatDialog.add(scrollPane, BorderLayout.CENTER);
-		chatDialog.add(chatInput, BorderLayout.SOUTH);
-
-		// Pack and calculate dialog position
-		chatDialog.pack();
-		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-		int x = screenSize.width - chatDialog.getWidth();
-		int y = screenSize.height - chatDialog.getHeight();
-		chatDialog.setLocation(x, y);
-
-		chatDialog.setVisible(true);
-	}
-
-	public void drawCardFromDeck() {
-		Player currentPlayer = model.getCurrentPlayer();
-
-		if (model.getDeck().remainingCards() > 0) {
-			Card newCard = model.drawCard(currentPlayer);
-
-			if (newCard != null) {
-				currentPlayer.addCardToHand(newCard);
-
-				updateStatus(messages.getString("card_drawn") + " " + newCard.toString());
-				updatePlayerCards();
-			}
-		} else {
-
-			updateStatus(messages.getString("deck_empty"));
-		}
-	}
 
 	public void setPileCard(Card card) {
 		pileCard = card;
@@ -748,8 +743,8 @@ public class UI_Frame extends JFrame implements GameObserver {
 
 	private void handleGameOver() {
 		Player winner = model.getCurrentPlayer();
-		String win = model.getWinner();
-		String over = model.getGameOver();
+		model.getWinner();
+		model.getGameOver();
 		for (Player player : model.getPlayers()) {
 			if (player.getHand().isEmpty()) {
 				winner = player;
@@ -758,9 +753,9 @@ public class UI_Frame extends JFrame implements GameObserver {
 		}
 
 		if (winner != null) {
-			
-		 JOptionPane.showMessageDialog(this, " " + winner.getName() + model.getGameOver() , "",
-			 JOptionPane.INFORMATION_MESSAGE);
+
+			JOptionPane.showMessageDialog(this, " " + winner.getName() + model.getGameOver(), "",
+					JOptionPane.INFORMATION_MESSAGE);
 		}
 	}
 
@@ -796,6 +791,10 @@ public class UI_Frame extends JFrame implements GameObserver {
 
 		updateStatus(currentPlayerStatus + " | " + topCardStatus + lastCpuAction);
 	}
+	
+	
+	
+	
 
 	public JButton getSendButton() {
 		return sendButton;
@@ -904,17 +903,6 @@ public class UI_Frame extends JFrame implements GameObserver {
 		this.showCardButtons = showCardButtons;
 	}
 
-	public JDialog getChatDialog() {
-		return chatDialog;
-	}
-
-	public JTextArea getChatArea() {
-		return chatArea;
-	}
-
-	public JTextField getChatInput() {
-		return chatInput;
-	}
 
 	public JLabel getDeckLabel() {
 		return deckLabel;
@@ -1040,13 +1028,6 @@ public class UI_Frame extends JFrame implements GameObserver {
 		this.fourthPlayer = fourthPlayer;
 	}
 
-	public String getPlayerName() {
-		return playerName;
-	}
-
-	public void setPlayerName(String name) {
-		this.playerName = name;
-	}
 
 	public List<JButton> getHalfcard() {
 		return halfCards;
@@ -1119,4 +1100,39 @@ public class UI_Frame extends JFrame implements GameObserver {
 	public JPanel getwestPanel() {
 		return westPanel;
 	}
+
+	public JMenu getHostGame() {
+		return hostGame;
+	}
+
+	public void setHostGame(JMenu resetGame) {
+		this.hostGame = resetGame;
+	}
+
+	public JMenuItem getStartServerItem() {
+		return startServerItem;
+	}
+
+	public void setStartServerItem(JRadioButtonMenuItem startServerItem) {
+		this.startServerItem = startServerItem;
+	}
+
+	public JMenuItem getEndServerItem() {
+		return endServerItem;
+	}
+
+	public void setEndServerItem(JRadioButtonMenuItem endServerItem) {
+		this.endServerItem = endServerItem;
+	}
+
+	public JRadioButtonMenuItem getJoinGame() {
+		return joinGame;
+	}
+
+	public void setJoinGame(JRadioButtonMenuItem joinGame) {
+		this.joinGame = joinGame;
+	}
+	
+	
+
 }

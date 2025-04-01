@@ -1,9 +1,13 @@
 package model_;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
+
+import controller_.GameSession;
+import controller_.ServerSide;
 import gui_app.GameObserver;
 import gui_app.UI_Frame;
 
@@ -12,7 +16,6 @@ public class GameModel {
 	public enum GameState {
 		CARD_PLAYED, CARD_DRAWN, TURN_CHANGED, GAME_OVER, SUIT_SELECTED, GAME_STARTED, OPPONENT_HANDS, GAME_INFO_UPDATED
 	}
-
 	private UI_Frame ui_frame;
 	private Deck deck;
 	private String aboutMessage;
@@ -27,7 +30,7 @@ public class GameModel {
 	private int numberOfCardsToPick;
 	private boolean skipNextPlayer;
 	private String currentSuit;
-	private List<GameObserver> observers = new ArrayList<>();
+	private List<GameObserver> observers;
 	private GameState currentState;
 	private String playerName;
 	private String title;
@@ -41,55 +44,88 @@ public class GameModel {
 	private String name;
 	private String name1, name2, name3;
 	private String startGame;
+	private ServerSide serv;
+	 private static GameModel instance;
 
 	// Constructor
 	public GameModel() {
-		this.ui_frame = UI_Frame.getInstance();
-		this.aboutMessage = "The game is called Crazy Eight Game";
-		this.startMessage = "Please select the number of players first.";
-		this.title = "Default Button Display";
-		this.message = "These has not been implemented";
-		this.start_ = "Card Game!";
-		this.newTurn = "Turn";
-		this.startGame = "Start game";
-		this.gameOver = " Win the game!";
-		this.name1 = "CPU 1";
-		this.name2 = "CPU 2";
-		this.name3 = "CPU 3";
+        this.ui_frame = UI_Frame.getInstance();
+        
+        this.aboutMessage = "The game is called Crazy Eight Game";
+        this.startMessage = "Please select the number of players first.";
+        this.title = "About!";
+        this.message = "This has not been implemented";
+        this.start_ = "Card Game!";
+        this.newTurn = "Turn";
+        this.startGame = "Start game";
+        this.gameOver = " Win the game!";
+        this.name1 = "CPU 1";
+        this.name2 = "CPU 2";
+        this.name3 = "CPU 3";
 
-		this.players = new ArrayList<>();
-		this.discardPile = new ArrayList<>();
+        this.players = new ArrayList<>();
+        this.discardPile = new ArrayList<>();
+        this.observers = new ArrayList<>();
+        this.gameRunning = false;
+        startNewGame();
+    }
 
-		gameRunning = false;
-		startNewGame();
-	}
 
-	/* Start Game */
+    
 	public void startNewGame() {
-		this.name = ui_frame.promptPlayerName();
-		discardPileTop = null;
-		deck = Deck.getInstance();
-		deck.resetDeck();
-		players.add(new Player(name, true));
-		players.add(new Player(name1, false));
-		players.add(new Player(name2, false));
-		players.add(new Player(name3, false));
+		
+		System.out.println("Name: ");
+	    this.discardPile = new ArrayList<>();
+	    this.discardPileTop = null;
 
-		this.numberOfCardsToPick = 0;
-		this.skipNextPlayer = false;
-		this.clockwise = true;
+	    this.deck = Deck.getInstance();
+	    this.deck.resetDeck();
 
-		dealInitialHands();
-		discardPileTop = deck.drawCard();
-		currentPlayerIndex = 0;
-		gameRunning = true;
+	    // Create players
+	    players.clear();
+	    players.add(new Player(name, true));
+	    players.add(new Player(name1, false)); 
+	    players.add(new Player(name2, false));
+	    players.add(new Player(name3, false));
 
+	    
+	    dealInitialHands();
+
+	    
+	    this.discardPileTop = deck.drawCard();
+	    if (discardPileTop != null) {
+	        discardPile.add(discardPileTop); 
+	    } else {
+	        throw new IllegalStateException("Error: Unable to initialize discard pile top card.");
+	    }
+
+	    this.currentPlayerIndex = 0;
+	    this.gameRunning = true;
+	    clockwise = true;
+	    setCurrentState(GameState.GAME_STARTED);
 	}
 
+	
+	private void dealInitialHands() {
+        for (Player player : players) {
+            List<Card> hand = new ArrayList<>();
+            for (int i = 0; i < 6 && deck.remainingCards() > 0; i++) {
+                Card card = deck.drawCard();
+                if (card != null) {
+                    hand.add(card);
+                }
+            }
+            player.setHand(hand);
+            System.out.println("Number of cards in player's hand: " + hand.size());
+        }
+    }
+	
 	// End game
 	public void endGame() {
-		gameRunning = false;
+	    gameRunning = false;
+	    setCurrentState(GameState.GAME_OVER);
 	}
+
 
 	public void addObserver(GameObserver observer) {
 		observers.add(observer);
@@ -105,10 +141,15 @@ public class GameModel {
 	}
 
 	private void notifyObservers() {
-		for (GameObserver observer : observers) {
-			observer.update(this.currentState);
-		}
+	    if (observers == null) {
+	        System.out.println("No observers to notify.");
+	        return;
+	    }
+	    for (GameObserver observer : observers) {
+	        observer.update(this.currentState);
+	    }
 	}
+
 
 	/* Method to locally change the system language */
 	public void changeLanguage(Locale locale) {
@@ -151,88 +192,95 @@ public class GameModel {
 
 	}
 
-	private void dealInitialHands() {
-		for (Player player : players) {
-			List<Card> hand = new ArrayList<>();
-			for (int i = 0; i < 6; i++) {
-				Card card = deck.drawCard();
-				if (card != null)
-					hand.add(card);
-			}
-			player.setHand(hand);
-			System.out.println("number of card in player hand " + hand);
-		}
-	}
+	
+	public static synchronized GameModel getInstance() {
+        if (instance == null) {
+            instance = new GameModel();
+        }
+        return instance;
+    }
 
 	public Card drawCard(Player player) {
-		if (deck.remainingCards() == 0) {
-			reshuffleDiscardPile();
-		}
+	    if (deck.remainingCards() == 0) {
+	        reshuffleDiscardPile();
+	    }
 
-		Card card = deck.drawCard();
-		setCurrentState(GameState.CARD_DRAWN);
+	    Card card = deck.drawCard();
+	    if (card == null) {
+	        System.out.println("No card could be drawn.");
+	        return null;
+	    }
 
-		return card;
+	    setCurrentState(GameState.CARD_DRAWN);
+	    return card;
 	}
 
 	public void reshuffleDiscardPile() {
-		if (discardPile.size() <= 1)
-			return;
+        if (discardPile.size() <= 1) {
+            System.out.println("Not enough cards to reshuffle the discard pile.");
+            return;
+        }
 
-		Card topCard = discardPileTop;
-		List<Card> toShuffle = new ArrayList<>(discardPile);
-		toShuffle.remove(topCard);
+        Card topCard = discardPileTop;
+        List<Card> toShuffle = new ArrayList<>(discardPile);
+        toShuffle.remove(topCard);
 
-		deck.getCards().addAll(toShuffle);
-		deck.shuffle();
+        deck.getCards().addAll(toShuffle);
+        deck.shuffle();
 
-		discardPile.clear();
-		discardPile.add(topCard);
-		discardPileTop = topCard;
-	}
+        discardPile.clear();
+        discardPile.add(topCard);
+        discardPileTop = topCard;
 
+        System.out.println("Discard pile reshuffled. Deck now has " + deck.remainingCards() + " cards.");
+    }
+	
 	public boolean isValidMove(Card card) {
-		if (card == null) {
-			return false;
-		}
+	    if (card == null) {
+	        return false; 
+	    }
 
-		if (card.getRank().equals("8")) {
-			return true;
-		}
-		// Card get the current rank on the top card
-		if (card.getRank().equals(discardPileTop.getRank())) {
-			return true;
-		}
-
-		if (currentSuit != null) {
-			return card.getSuit().equals(currentSuit) || card.getRank().equals(discardPileTop.getRank());
-		}
-
-		return card.getSuit().equals(discardPileTop.getSuit());
+	    return card.getRank().equals("8") || card.getSuit().equals(currentSuit) ||  card.getRank().equals(discardPileTop.getRank());
 	}
-
+	
+// Play card
+	
 	public boolean playCard(Player player, Card card, String chosenSuit) {
-		if (!isValidPlay(card)) {
-			return false;
-		}
+	    if (!isValidMove(card)) {
+	        System.out.println("Invalid play!");
+	        return false;
+	    }
 
-		player.removeCardFromHand(card);
-		discardPile.add(card);
-		discardPileTop = card;
-		calculateScore(player);
+	    if (!player.getHand().contains(card)) {
+	        System.out.println("Player does not have the specified card.");
+	        return false;
+	    }
 
-		// Handle special cards
-		cardEffect(player, card);
+	   
+	    player.removeCardFromHand(card);
+	   
+	    
+	    discardPile.add(card);
+	    discardPileTop = card;
+	    
+	    if (!player.isHuman()) { 
+	        ui_frame.removeOpponentCard(player); 
+	    } else { 
+	        ui_frame.updatePlayerCards(); 
+	    }
+	    cardEffect(player, card);
 
-		currentSuit = card.getSuit();
-		setCurrentState(GameState.CARD_PLAYED);
-		return true;
+	    // Update the current suit
+	    if (card.getRank().equals("8") && chosenSuit != null) {
+	        currentSuit = chosenSuit;
+	    } else {
+	        currentSuit = card.getSuit();
+	    }
+
+	    setCurrentState(GameState.CARD_PLAYED);
+	    return true;
 	}
 
-	private boolean isValidPlay(Card card) {
-		return card.getSuit().equals(currentSuit) || card.getRank().equals(discardPileTop.getRank())
-				|| card.getRank().equals("8");
-	}
 
 	public boolean processCPUTurn() {
 	    Player cpu = getCurrentPlayer();
@@ -240,15 +288,14 @@ public class GameModel {
 
 	    if (cpu.getHand().isEmpty()) {
 	        System.out.println(cpu.getName() + " wins the game!");
-	        gameRunning = false; 
+	        gameRunning = false;
 	        return true;
 	    }
 
 	    List<Card> validCards = new ArrayList<>();
 	    for (Card card : cpu.getHand()) {
-	        if (isValidPlay(card)) {
+	        if (isValidMove(card)) {
 	            validCards.add(card);
-	            calculateScore(cpu);
 	        }
 	    }
 
@@ -260,160 +307,135 @@ public class GameModel {
 	            cpu.addCardToHand(drawnCard);
 	            System.out.println("CPU drew: " + drawnCard);
 
-	            if (isValidPlay(drawnCard)) {
+	            if (isValidMove(drawnCard)) {
 	                playCard(cpu, drawnCard, determinePreferredSuit(cpu));
-	                System.out.println(cpu.getName() + " played: " + drawnCard);
-	            } else {
-	                System.out.println(cpu.getName() + " cannot play the drawn card.");
-	                skipNextPlayer = true;
+	                return true;
 	            }
-	        } else {
-	            System.out.println("Deck is empty, CPU cannot draw a card.");
-	            skipNextPlayer = true;
 	        }
 
-	        nextPlayer(); 
+	        skipNextPlayer = true;
+	        nextPlayer();
 	        return false;
 	    }
 
+	    
 	    Card cardToPlay = validCards.get(0);
-	    String chosenSuit = null;
-
-	  
-	    if (cardToPlay.getRank().equals("8")) {
-	        chosenSuit = determinePreferredSuit(cpu);
-	    }
+	    String chosenSuit = cardToPlay.getRank().equals("8") ? determinePreferredSuit(cpu) : null;
 
 	    playCard(cpu, cardToPlay, chosenSuit);
 	    System.out.println(cpu.getName() + " played: " + cardToPlay + 
 	                       (chosenSuit != null ? " with chosen suit " + chosenSuit : ""));
 
-	   
-	    if (cpu.equals(players.get(1))) {
-	        ui_frame.removeBackDisplayCPU2(cardToPlay);
-	    } else if (cpu.equals(players.get(2))) {
-	        ui_frame.removeCardBackDisplayCPU3(cardToPlay);
-	    } else if (cpu.equals(players.get(3))) {
-	        ui_frame.removeDisplayCPU4(cardToPlay);
-	    }
-
-	 
-	    if (cpu.getHand().isEmpty()) {
-	        System.out.println(cpu.getName() + " wins the game!");
-	        gameRunning = false; 
-	        return true;
-	    }
-
 	    nextPlayer();
 	    return true;
 	}
 
+
 	private void cardEffect(Player player, Card card) {
-		switch (card.getRank()) {
-		case "8":
-			currentSuit = determinePreferredSuit(player);
-			System.out.println(player.getName() + " changed the suit to: " + currentSuit);
-			break;
-		case "2":
-			Player nextPlayer = getNextPlayer();
-			System.out.println(player.getName() + " played a 2. " + nextPlayer.getName() + " must draw 2 cards.");
-			for (int i = 0; i < 2; i++) {
-				Card drawnCard = drawCard(nextPlayer);
-				if (drawnCard != null) {
-					nextPlayer.addCardToHand(drawnCard);
-				}
-			}
-			break;
-		case "J":
-			System.out.println(player.getName() + " played a Jack. Next player is skipped.");
-			skipNextPlayer = true;
-			break;
-		default:
-			break;
-		}
+	    switch (card.getRank()) {
+	        case "8":
+	            currentSuit = determinePreferredSuit(player);
+	            System.out.println(player.getName() + " changed the suit to: " + currentSuit);
+	            break;
+	        case "2":
+	            Player nextPlayer = getNextPlayer();
+	            System.out.println(player.getName() + " played a 2. " + nextPlayer.getName() + " must draw 2 cards.");
+	            for (int i = 0; i < 2; i++) {
+	                Card drawnCard = drawCard(nextPlayer);
+	                if (drawnCard != null) {
+	                    nextPlayer.addCardToHand(drawnCard);
+	                }
+	            }
+	            break;
+	        case "J":
+	            System.out.println(player.getName() + " played a Jack. Next player is skipped.");
+	            skipNextPlayer = true;
+	            break;
+	        default:
+	            break;
+	    }
 	}
 
 	public void nextPlayer() {
-		System.out.println("Current Player Index before: " + currentPlayerIndex);
-		System.out.println("Clockwise: " + clockwise + ", Skip Next Player: " + skipNextPlayer);
+	    System.out.println("Current Player Index before: " + currentPlayerIndex);
+	    System.out.println("Clockwise: " + clockwise + ", Skip Next Player: " + skipNextPlayer);
 
-		if (skipNextPlayer) {
-			skipNextPlayer = false;
-			currentPlayerIndex = (currentPlayerIndex + (clockwise ? 2 : -2) + players.size()) % players.size();
-			System.out.println("Skipping a player!");
-		} else {
-			currentPlayerIndex = (currentPlayerIndex + (clockwise ? 1 : -1) + players.size()) % players.size();
-		}
-		System.out.println("Current Player Index after: " + currentPlayerIndex);
-		setCurrentState(GameState.TURN_CHANGED);
+	    if (skipNextPlayer) {
+	        skipNextPlayer = false;
+	        currentPlayerIndex = (currentPlayerIndex + (clockwise ? 2 : -2) + players.size()) % players.size();
+	        System.out.println("Skipping a player!");
+	    } else {
+	        currentPlayerIndex = (currentPlayerIndex + (clockwise ? 1 : -1) + players.size()) % players.size();
+	    }
 
-		if (!getCurrentPlayer().isHuman()) {
-			processCPUTurn();
-		} else {
-			setCurrentState(GameState.TURN_CHANGED);
-		}
+	    System.out.println("Current Player Index after: " + currentPlayerIndex);
+	    setCurrentState(GameState.TURN_CHANGED);
+
+	    if (!getCurrentPlayer().isHuman()) {
+	        processCPUTurn();
+	    }
 	}
 
+
 	public Player getNextPlayer() {
-		int nextPlayerIndex = (currentPlayerIndex + (clockwise ? 1 : -1) + players.size()) % players.size();
-		return players.get(nextPlayerIndex);
+	    int nextPlayerIndex = (currentPlayerIndex + (clockwise ? 1 : -1) + players.size()) % players.size();
+	    return players.get(nextPlayerIndex);
 	}
 
 	public boolean isGameOver() {
-		for (Player player : players) {
-			if (player.getHand().isEmpty()) {
-				gameRunning = false;
-				setCurrentState(GameState.GAME_OVER);
-				return true;
-			}
-		}
-
-		return false;
+	    for (Player player : players) {
+	        if (player.getHand().isEmpty()) {
+	            gameRunning = false;
+	            setCurrentState(GameState.GAME_OVER);
+	            return true;
+	        }
+	    }
+	    return false;
 	}
 
-	public int calculateScore(Player player) {
-		int score = 0;
+	// Calculate score
+	 public int calculateScore(Player player) {
+	        int score = 0;
 
-		for (Card card : player.getHand()) {
-			String rank = card.getRank();
-
-			switch (rank) {
-			case "J":
-				score += 1;
-				break;
-			case "Q":
-				score += 1;
-				break;
-			case "K":
-				score += 1;
-				break;
-			case "A":
-				score += 1;
-				break;
-			case "8":
-				score += 1;
-				break;
-			default:
-				score += 1;
-				break;
-			}
-		}
-
-		return score;
-	}
+	        for (Card card : player.getHand()) {
+	            String rank = card.getRank();
+	            switch (rank) {
+	                case "J":
+	                case "Q":
+	                case "K":
+	                case "A":
+	                case "8":
+	                    score += 1;
+	                    break;
+	                default:
+	                    try {
+	                        score += Integer.parseInt(rank);
+	                    } catch (NumberFormatException e) {
+	                        System.out.println("Invalid card rank: " + rank);
+	                    }
+	                    break;
+	            }
+	        }
+	        return score;
+	    }
 
 	public void handleForcePickUp(Player player) {
+	    int cardsPicked = 0;
 
-		for (int i = 0; i < numberOfCardsToPick; i++) {
-			Card drawnCard = drawCard(player);
-			if (drawnCard == null) {
-				System.out.println("Deck is empty, cannot draw more cards.");
-				break;
-			}
-			player.addCardToHand(drawnCard);
-		}
-		numberOfCardsToPick = 0;
+	    for (int i = 0; i < numberOfCardsToPick; i++) {
+	        Card drawnCard = drawCard(player);
+	        if (drawnCard == null) {
+	            System.out.println("Deck is empty, cannot draw more cards.");
+	            break;
+	        }
+	        player.addCardToHand(drawnCard);
+	        cardsPicked++;
+	    }
+
+	    System.out.println("Forced pick-up complete. Cards picked: " + cardsPicked);
+	    numberOfCardsToPick = 0;
 	}
+
 	
 
 	public String determinePreferredSuit(Player cpu) {
@@ -583,7 +605,14 @@ public class GameModel {
 	public void setName2(String name2) {
 		this.name2 = name2;
 	}
+	
+	public void setName(String name) {
+		this.name = name;
+	}
 
+	public String getName() {
+		return name;
+	}
 	public String getName3() {
 		return name3;
 	}
@@ -599,5 +628,7 @@ public class GameModel {
 	public void setStartGame(String startGame) {
 		this.startGame = startGame;
 	}
+
+	
 
 }

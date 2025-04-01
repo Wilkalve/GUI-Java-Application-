@@ -20,46 +20,50 @@ public class CrasyEigthsGame {
 
 	// Default CrasyEigthsGame constructor
 	public CrasyEigthsGame() {
-		
-		SplashScreen splash = new SplashScreen();
-        splash.setVisible(true);
-
-        for (int i = 0; i <= 100; i++) {
-            final int percent = i;
-            try {
-                SwingUtilities.invokeLater(new Runnable() {
-                    public void run() {
-                        splash.setProgress(percent);
-                    }
-                });
-                Thread.sleep(40);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        splash.dispose();
+//		
+//		SplashScreen splash = new SplashScreen();
+//        splash.setVisible(true);
+//
+//        for (int i = 0; i <= 100; i++) {
+//            final int percent = i;
+//            try {
+//                SwingUtilities.invokeLater(new Runnable() {
+//                    public void run() {
+//                        splash.setProgress(percent);
+//                    }
+//                });
+//                Thread.sleep(40);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//        }
+//        splash.dispose();
         
 		 
 		  //Create the GameModel
         GameModel model = new GameModel();
 
         // Get the UI_Frame instance
-        UI_Frame view = UI_Frame.getInstance();
+        UI_Frame view = new UI_Frame();
+       
+       
 
         // Add the view as an observer of the model
         model.addObserver(view);
 
-        
         // Set the model in the view !
         view.setModel(model);
        
-
         // model and players are set up
         model.setCurrentState(GameState.GAME_STARTED);
 
         // Create the controller 
-        new GameController(model, view);
+        new  GameController(model, view);
 		
+      
+    
+      
+        
 
 	}
 
