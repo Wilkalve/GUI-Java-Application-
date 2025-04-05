@@ -8,6 +8,7 @@ import javax.swing.JLabel;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 
+
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -19,30 +20,34 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 
+
 public class GameServer {
 	private static GameServer instance;
     private JFrame frame;
     private JTextField nameField;
+    private JComboBox<Integer> playerDropdown;
     private JComboBox<Integer> portDropdown;
     private JLabel statusLabel;
     private List<ClientHandler> clientHandlers = new ArrayList<>();
     private ServerSocket serverSocket;
     private JButton hostButton;
     private  JButton cancelButton;
+    private int numPlayer;
 
     //Default constructor
     public GameServer() {
        
     }
     
+ /* Returns the singleton instance of GameServer, ensuring only one instance exists.*/
     public static synchronized GameServer getInstance() {
-		if (instance == null) {
-			instance = new GameServer();
-		}
-		return instance;
-	}
+        if (instance == null) {
+            instance = new GameServer();
+        }
+        return instance;
+    }
 
-
+  /* Initializes and displays the server connection GUI, setting up input fields and buttons. */
     private void initializeGUI() {
     	if (frame != null && frame.isVisible()) {
             frame.toFront(); 
@@ -51,20 +56,31 @@ public class GameServer {
     	
         frame = new JFrame("Server Connection");
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        frame.setLayout(new GridLayout(4, 2, 10, 10));
+        frame.setLayout(new GridLayout(5, 3, 10, 10));
 
         // Name field
         JLabel nameLabel = new JLabel("Host Name:");
         nameField = new JTextField("HostPlayer", 20);
+        
         frame.add(nameLabel);
         frame.add(nameField);
+        
+        // num player
+        JLabel numField = new JLabel("Player number:");
+        playerDropdown = new JComboBox<>();
+        for (int i = 2; i <= 4; i++) { 
+        	playerDropdown.addItem(i);
+        }
+        frame.add(numField);
+        frame.add(playerDropdown);
 
         // Port dropdown
         JLabel portLabel = new JLabel("Port:");
         portDropdown = new JComboBox<>();
-        for (int port = 10000; port <= 10010; port++) { 
+        for (int port = 10000; port <= 65535; port++) { 
             portDropdown.addItem(port);
         }
+        
         frame.add(portLabel);
         frame.add(portDropdown);
 
@@ -85,18 +101,25 @@ public class GameServer {
         frame.setVisible(true);
     }
 
+    /*Starts the game server by binding to the specified port, 
+     accepting client connections, and handling communication.*/
     private void startServer() {
         String name = nameField.getText();
         int port = (int) portDropdown.getSelectedItem();
         statusLabel.setText("Starting server: " + name + " on port " + port);
+        
+      
 
         try {
-            serverSocket = new ServerSocket(port);
+        	serverSocket = new ServerSocket(port, 50, java.net.InetAddress.getByName("0.0.0.0"));
+
             statusLabel.setText("Server running on port " + port);
             logDebug("Server started successfully. Listening on port " + port);
 
             new Thread(() -> {
+            	
                 while (true) {
+                	
                     try {
                         Socket clientSocket = serverSocket.accept();
                         logDebug("Client connected: " + clientSocket.getRemoteSocketAddress());
@@ -105,9 +128,11 @@ public class GameServer {
                         new Thread(handler).start();
                     } catch (IOException e) {
                         logDebug("Error accepting connection: " + e.getMessage());
+                        return;
                     }
                 }
             }).start();
+            
         } catch (IOException e) {
             statusLabel.setText("Error starting server: " + e.getMessage());
             logDebug("Error starting server: " + e.getMessage());
@@ -115,10 +140,19 @@ public class GameServer {
     }
 
     private void logDebug(String message) {
-        SwingUtilities.invokeLater(() -> statusLabel.setText(message));
+    	SwingUtilities.invokeLater(() -> {
+    	    if (statusLabel != null) {
+    	        statusLabel.setText(message);
+    	    } else {
+    	        System.err.println("Error: statusLabel is null.");
+    	    }
+    	});
+
         System.out.println(message);
     }
 
+    
+    /* Sends a message from the sender to all connected clients in the server.*/
     private void broadcastMessage(String senderName, String message) {
         synchronized (clientHandlers) {
             for (ClientHandler handler : clientHandlers) {
@@ -128,6 +162,8 @@ public class GameServer {
         }
     }
 
+    /*Disconnects a specific client from the server by closing their socket
+       and removing them from the list of active client handlers.*/
     private void disconnectClient(String senderName) {
         synchronized (clientHandlers) {
             ClientHandler handlerToRemove = null;
@@ -151,6 +187,8 @@ public class GameServer {
         }
     }
 
+    /*Handles individual client connections, receiving messages,
+  updating player names, and managing disconnections.*/
     private class ClientHandler implements Runnable {
         private Socket socket;
         private PrintWriter out;
@@ -205,9 +243,13 @@ public class GameServer {
             }
         }
     }
-
+    
+    /*Processes incoming messages based on a predefined protocol,
+     handling disconnections, player joins, and message broadcasts*/ 
     private void handleProtocol(String message, String senderName) {
         String[] parts = message.split("#", 2);
+        
+        
         if (parts.length != 2) {
             logDebug("Invalid protocol format: " + message);
             return;
@@ -238,6 +280,7 @@ public class GameServer {
         }
     }
 
+    // Launch and initialite the GUI to connect to the server
     public void launchserver() {
     	 initializeGUI();
     	 
@@ -264,6 +307,45 @@ public class GameServer {
     }
     
     
+    public void disconnectServer() {
+        try {
+            if (serverSocket != null && !serverSocket.isClosed()) {
+                serverSocket.close(); 
+                logDebug("Server stopped.");
+            }
+
+            synchronized (clientHandlers) {
+                for (ClientHandler handler : clientHandlers) {
+                    try {
+                        handler.socket.close(); 
+                    } catch (IOException e) {
+                        logDebug("Error disconnecting client: " + e.getMessage());
+                    }
+                }
+                clientHandlers.clear(); 
+                logDebug("All clients disconnected.");
+            }
+
+            frame.dispose(); 
+        } catch (IOException e) {
+            logDebug("Error shutting down server: " + e.getMessage());
+        }
+    }
+
+   
+    public int getSelectedPlayerNumber() {
+    	int playerNumber = 0;
+    	if (playerDropdown != null) {
+    	     playerNumber = (int) playerDropdown.getSelectedItem();
+    	} else {
+    		 System.err.println("Error: playerDropdown is null");
+    	   return 0;
+    	}
+
+    	
+    	System.out.println("Number of player: " +  playerNumber);
+        return (int) playerDropdown.getSelectedItem(); 
+    }
 
     
     public JButton getHostButton() {

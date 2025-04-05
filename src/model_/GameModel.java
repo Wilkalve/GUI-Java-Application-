@@ -452,181 +452,224 @@ public class GameModel {
 
 	}
 
-	// Getters and setters as needed
+	/* Getters and setters as needed */
 	public void setUI_Frame(UI_Frame ui_frame) {
 		this.ui_frame = ui_frame;
 	}
 
+	// Returns the about message of the game.
 	public String getAboutMessage() {
-		return aboutMessage;
+	    return aboutMessage;
 	}
 
+	// Returns the start message displayed at the beginning of the game.
 	public String getStartMessage() {
-		return startMessage;
+	    return startMessage;
 	}
 
+	/* Retrieves the top card from the discard pile. */
 	public Card getDiscardPileTop() {
-		return discardPileTop;
+	    return discardPileTop;
 	}
 
+	/* Checks if the game is currently running. */
 	public boolean isGameRunning() {
-		return gameRunning;
+	    return gameRunning;
 	}
 
+	/* Returns the current suit in play. */
 	public String getCurrentSuit() {
-		return currentSuit;
+	    return currentSuit;
 	}
 
+	/* Retrieves the list of players in the game. */
 	public List<Player> getPlayers() {
-		return players;
+	    return players;
 	}
 
+	/* Exits the game application. */
 	public void exitGame() {
-		System.exit(0);
+	    System.exit(0);
 	}
 
+	/* Adds a new player to the game. */
 	public void addPlayer(Player player) {
-		players.add(player);
-
+	    players.add(player);
 	}
 
+	/* Returns the deck of cards used in the game. */
 	public Deck getDeck() {
-		return deck;
+	    return deck;
 	}
 
+	/* Checks if opponent hands are visible. */
 	public boolean isOpponentHandsVisible() {
-		return isOpponentHandsVisible();
+	    return isOpponentHandsVisible();
 	}
 
+	/* Retrieves the player's name. */
 	public String getPlayerName() {
-		return playerName;
+	    return playerName;
 	}
 
+	/* Sets the player's name. */
 	public void setPlayerName(String name) {
-		this.playerName = name;
+	    this.playerName = name;
 	}
 
+	/* Retrieves the full discard pile. */
 	public List<Card> getDiscardPile() {
-		return discardPile;
+	    return discardPile;
 	}
 
+	/* Retrieves the current player whose turn it is. */
 	public Player getCurrentPlayer() {
-		return players.get(currentPlayerIndex);
+	    return players.get(currentPlayerIndex);
 	}
 
+	/* Returns the current turn direction (true for clockwise). */
 	public boolean getTurn() {
-		return clockwise;
+	    return clockwise;
 	}
 
+	/* Returns the title of the game. */
 	public String getTitle() {
-		return title;
+	    return title;
 	}
 
+	/* Sets the title of the game. */
 	public void setTitle(String title) {
-		this.title = title;
+	    this.title = title;
 	}
 
+	// Retrieves the current game message.
 	public String getMessage() {
-		return message;
+	    return message;
 	}
 
+	/* Sets a new game message. */
 	public void setMessage(String message) {
-		this.message = message;
+	    this.message = message;
 	}
 
+	/* Retrieves the last played card in the game. */
 	public Card getLastPlayedCard() {
-		return lastPlayedCard;
+	    return lastPlayedCard;
 	}
 
+	/* Sets the last played card in the game. */
 	public void setLastPlayedCard(Card lastPlayedCard) {
-		this.lastPlayedCard = lastPlayedCard;
+	    this.lastPlayedCard = lastPlayedCard;
 	}
 
+	// Returns the start indicator.
 	public String getStart_() {
-		return start_;
+	    return start_;
 	}
 
+	/*  Sets the start indicator. */
 	public void setStart_(String start_) {
-		this.start_ = start_;
+	    this.start_ = start_;
 	}
 
+	/*  Retrieves the message for a new turn. */
 	public String getNewTurn() {
-		return newTurn;
+	    return newTurn;
 	}
 
+	// Sets the new turn message.
 	public void setNewTurn(String newTurn) {
-		this.newTurn = newTurn;
+	    this.newTurn = newTurn;
 	}
 
+	/* Retrieves the start game message. */
 	public String getStartGameMessage() {
-		return startGameMessage;
+	    return startGameMessage;
 	}
 
+	/* Sets the start game message. */
 	public void setStartGameMessage(String startGameMessage) {
-		this.startGameMessage = startGameMessage;
+	    this.startGameMessage = startGameMessage;
 	}
 
+	/* Retrieves the game over message. */
 	public String getGameOver() {
-		return gameOver;
+	    return gameOver;
 	}
 
+	/* Sets the game over message. */
 	public void setGameOver(String gameOver) {
-		this.gameOver = gameOver;
+	    this.gameOver = gameOver;
 	}
 
+	// Retrieves the next turn message.
 	public String getNextTurn() {
-		return nextTurn;
+	    return nextTurn;
 	}
 
+	/* Sets the next turn message. */
 	public void setNextTurn(String nextTurn) {
-		this.nextTurn = nextTurn;
+	    this.nextTurn = nextTurn;
 	}
 
+	/* Retrieves the winner's name. */
 	public String getWinner() {
-		return winner;
+	    return winner;
 	}
 
+	/* Sets the winner's name. */
 	public void setWinner(String winner) {
-		this.winner = winner;
+	    this.winner = winner;
 	}
 
+	// Retrieves name1.
 	public String getName1() {
-		return name1;
+	    return name1;
 	}
 
+	// Sets name1.
 	public void setName1(String name1) {
-		this.name1 = name1;
+	    this.name1 = name1;
 	}
 
+	/* Retrieves name2. */
 	public String getName2() {
-		return name2;
+	    return name2;
 	}
 
+	/* Sets name2. */
 	public void setName2(String name2) {
-		this.name2 = name2;
+	    this.name2 = name2;
 	}
-	
+
+	// Sets the general player name.
 	public void setName(String name) {
-		this.name = name;
+	    this.name = name;
 	}
 
+	/* Retrieves the general player name. */
 	public String getName() {
-		return name;
+	    return name;
 	}
+
+	/* Retrieves name3. */
 	public String getName3() {
-		return name3;
+	    return name3;
 	}
 
+	/* Sets name3.*/
 	public void setName3(String name3) {
-		this.name3 = name3;
+	    this.name3 = name3;
 	}
 
+	/* Retrieves the start game indicator.*/
 	public String getStartGame() {
-		return startGame;
+	    return startGame;
 	}
 
+	/* Sets the start game indicator. */
 	public void setStartGame(String startGame) {
-		this.startGame = startGame;
+	    this.startGame = startGame;
 	}
 
 	

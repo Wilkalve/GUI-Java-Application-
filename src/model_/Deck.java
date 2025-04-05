@@ -38,6 +38,7 @@ public class Deck {
 		Collections.shuffle(cards);
 	}
 
+	// let player draw card
 	public Card drawCard() {
 		if (!cards.isEmpty()) {
 			return cards.remove(0);
@@ -45,6 +46,7 @@ public class Deck {
 		return null;
 	}
 
+	// check the remaining card
 	public int remainingCards() {
 		return cards.size();
 	}
@@ -61,6 +63,7 @@ public class Deck {
 		return ranks;
 	}
 
+	// reset the deck
 	public void resetDeck() {
 		cards.clear();
 		initializeDeck();

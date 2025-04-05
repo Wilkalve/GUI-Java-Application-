@@ -15,9 +15,11 @@ public class Card {
 		this.fullCardImage = fullCard;
 	}
 	
+	/* return a suit of card */
   public String getSuit() {
 	  return suit;
   }
+  /* set the suit */
 	public void setSuit(String suit) {
 		this.suit = suit;
 	}
@@ -30,10 +32,12 @@ public class Card {
 		this.rank = rank;
 	}
 
+	/* return the half card image */
 	public String getHalfCardImage() {
 		return halfCardImage;
 	}
 
+	/* return the full card image */
 	public String getFullCardImage() {
 		return fullCardImage;
 	}

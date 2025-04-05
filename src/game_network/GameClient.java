@@ -27,8 +27,12 @@ public class GameClient {
     private JLabel statusLabel;
 	private static GameClient instance;
     private static boolean isSetupDialogShown = false; 
+ 
 
+    /*Establishes a connection to the game server using the specified address and port,
+   initializes input/output streams, and sends the player's name to the server.*/
     public GameClient(String serverAddress, int port, String playerName) throws IOException {
+    	
         try {
             this.socket = new Socket(serverAddress, port);
             this.out = new PrintWriter(socket.getOutputStream(), true);
@@ -55,19 +59,17 @@ public class GameClient {
 		return instance;
 	}
 
+    // initial component 
     private void initializeGUI(String playerName) {
-    	if (frame != null && frame.isVisible()) {
-            frame.toFront(); 
-            return; 
-        }
     	
-        frame = new JFrame("Chat Client - Player: " + playerName);
-        messageArea = new JTextArea(16, 25);
+    	
+        frame = new JFrame("Chat Player: " + playerName);
+        messageArea = new JTextArea(16, 20);
         messageArea.setEditable(false);
-        inputField = new JTextField(35);
+        inputField = new JTextField(40);
         statusLabel = new JLabel("Connected as: " + playerName);
 
-        frame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+        frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         frame.setLayout(new BorderLayout());
         frame.add(new JScrollPane(messageArea), BorderLayout.CENTER);
         frame.add(inputField, BorderLayout.SOUTH);
@@ -109,15 +111,16 @@ public class GameClient {
 
 
 
+    // Start the client process to connect to the server
     public void launchClient() {
         if (isSetupDialogShown) {
             logDebug("Client setup dialog has already been shown.");
-            return; 
+            
         }
 
         JPanel panel = new JPanel(new GridLayout(5, 2, 10, 10));
         JTextField playerNameField = new JTextField("DefaultPlayer", 20);
-        JTextField serverAddressField = new JTextField("localhost", 20);
+        JTextField serverAddressField = new JTextField("", 20);
         JTextField portField = new JTextField("10000", 20);
         JLabel statusLabel = new JLabel("Enter details and click Connect.");
 
@@ -132,7 +135,9 @@ public class GameClient {
 
         int option = JOptionPane.showConfirmDialog(null, panel, "Client Configuration", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
-        if (option == JOptionPane.OK_OPTION) {
+        
+        if (option == JOptionPane.OK_OPTION ) {
+        	
             isSetupDialogShown = true; 
 
             String playerName = playerNameField.getText();
@@ -160,7 +165,8 @@ public class GameClient {
         }
     }
 
-    
+
+ // disconnect from the server
     private void disconnectFromServer() {
         try {
             if (out != null) {

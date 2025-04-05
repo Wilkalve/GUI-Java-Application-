@@ -9,15 +9,12 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.net.Socket;
-import java.net.SocketException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
-import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
@@ -39,14 +36,15 @@ public class GameController implements ActionListener {
 	private int selectedPlayerCount;
     private GameClient client;
     private GameServer server;
+    private boolean messageShown = false;
 	
+    /*Initializes the game controller by linking the model and UI, setting up the server,
+   client, and interaction handlers for gameplay effects.*/
 	public GameController(GameModel model, UI_Frame view) {
 		this.model = model;
 		this.view = view;
 		this.server = new GameServer();
 		this.client = GameClient.getInstance();
-		
-		
 		this.selectedPlayerCount = 0;
 
 		if (this.model == null || this.view == null) {
@@ -60,9 +58,7 @@ public class GameController implements ActionListener {
 		setupCardHoverEffect();
 		CardHoverEffect();
 		setupEffect();
-		fullCardRover();
-	
-		
+		fullCardRover();	
 	}
 	
 	 public static synchronized GameController getInstance(GameModel model, UI_Frame view) {
@@ -71,8 +67,8 @@ public class GameController implements ActionListener {
 			}
 			return instance;
 		}
-
 	 
+	 /* Handles action events triggered by user interactions with the UI components.*/
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		String command = e.getActionCommand();
@@ -90,16 +86,16 @@ public class GameController implements ActionListener {
 
 		switch (command) {
 		case "1":
-		this.selectedPlayerCount  = handleButton1();
+	  handleButton1();
 		setSelectedPlayerCount(2);
 		 
 			break;
 		case "2":
-			this.selectedPlayerCount = handleButton2();
+			 handleButton2();
 			setSelectedPlayerCount(3);
 			break;
 		case "3":
-			this.selectedPlayerCount  = handleButton3();
+			 handleButton3();
 			setSelectedPlayerCount(4);
 			break;
 		case "Chat":
@@ -123,6 +119,7 @@ public class GameController implements ActionListener {
 
 	}
 
+	// Set action on specific object on the gui
 	private void initializeUI() {
 		addActionListeners();
 		view.getButton1().setActionCommand("1");
@@ -136,6 +133,7 @@ public class GameController implements ActionListener {
 
 	}
 
+	// set action listener on gui objects
 	private void addActionListeners() {
 		// Menu actions listener
 		view.getNewItem_1().addActionListener(this);
@@ -159,6 +157,8 @@ public class GameController implements ActionListener {
 
 	}
 
+	 
+	/*sets up a mapping of action strings to their corresponding handler methods.*/
 	private void initializeActionHandlers() {
 		actionHandlers.put("HowToPlay", this::handleHowToPlay);
 		actionHandlers.put("Hint", this::handleHint);
@@ -180,16 +180,15 @@ public class GameController implements ActionListener {
 
 	}
 
+	/*Updates the application's language setting based on the user's selection
+	 and applies the corresponding locale to the model.*/
 	private void handleLanguageChange() {
 		selectedLanguage = (String) view.getLanguageBox().getSelectedItem();
 		locale = selectedLanguage.equals("French (français)") ? new Locale("fr") : Locale.ENGLISH;
 		model.changeLanguage(locale);
 	}
 
-	public void handleCardSelected(Card selectedCard) {
-		// Logic to handle when a card is selected in the UI
-
-	}
+	
 
 	private void handleHowToPlay() {
 		// model.showHowToPlay();
@@ -215,23 +214,21 @@ public class GameController implements ActionListener {
 		
 		server.launchserver();
 		
+	}
 
-    }
-
-	
 	// Join the game session
 	public void handlJoinGame() {
-		
-		client.launchClient();
+	    client.launchClient();
+	        this.selectedPlayerCount = server.getSelectedPlayerNumber();
 	}
-	
-	
 
+	// handle end connection
 	public void handleEndConnection(){ 
-	 //ServerSide.getInstance().stopServer();
+	 server.disconnectServer();
+	 
 		JOptionPane.showMessageDialog(null, "The server has been disconnected!", "Connection Ended", 
 		        JOptionPane.WARNING_MESSAGE
-		    );
+	    );
 		
 	}
 	
@@ -244,66 +241,64 @@ public class GameController implements ActionListener {
 	}
 
 	// Display card north, and south
-	public int handleButton1() {
+	public void handleButton1() {
 		System.out.println("Button clicked: 2 players selected.");
-		view.getButton1().setBackground(Color.PINK);
 		
-		this.selectedPlayerCount = 2;
-		
+	
 		hasPlayerSelected = true;
-//		view.defaultPlayer();
+		view.getButton1().setBackground(Color.PINK);
+	    
+		view.defaultPlayer();
 		
 		setupCardHoverEffect();
     	CardHoverEffect();
 		setupEffect();
 		fullCardRover();
-		
-		return selectedPlayerCount;
+
 
 	}
 
 	// Display card north, south and west
-	public int handleButton2() {
+	public void handleButton2() {
 		System.out.println("Button clicked: 3 players selected.");
-		view.getButton2().setBackground(Color.GREEN);
+		
+	
+		hasPlayerSelected = true;
 		
 		this.selectedPlayerCount = 3;
-		
-		hasPlayerSelected = true;
-//		view.defaultPlayer();
-//		view.addCardsToWestCenter();
+		view.getButton2().setBackground(Color.GREEN);
+		view.defaultPlayer();
+		view.addCardsToWestCenter();
 		
 		setupCardHoverEffect();
 		CardHoverEffect();
 		setupEffect();
 		fullCardRover();
 		
-		return selectedPlayerCount;
 
 	}
 
 	// Display card north, south, west and east
-	public int handleButton3() {
+	public void handleButton3() {
 		System.out.println("Button clicked: 4 players selected.");
-		view.getButton3().setBackground(Color.MAGENTA);
 
-		
-		this.selectedPlayerCount =  4;
-		
+
 		hasPlayerSelected = true;
-//		view.addCardsToWestCenter();
-//		view.addCardsToEastCenter();
-//		view.defaultPlayer();
+		this.selectedPlayerCount = 4;
+
+		view.getButton3().setBackground(Color.MAGENTA);
+		view.addCardsToWestCenter();
+		view.addCardsToEastCenter();
+		view.defaultPlayer();
 
 		setupCardHoverEffect();
 		CardHoverEffect();
 		setupEffect();
 		fullCardRover();
-		
-		return selectedPlayerCount;
 
 	}
 
+	// handle the start game
 	private void handleStartGame() {
 	    if (!hasPlayerSelected) {
 	        
@@ -320,11 +315,9 @@ public class GameController implements ActionListener {
 	}
 
 	// Chat method
-	private void handleChat() {
+ void handleChat() {
 		
 	}
-
-
 
 	private void setupCardHoverEffect() {
 
@@ -502,7 +495,7 @@ public class GameController implements ActionListener {
 	}
 
 
-
+	// Handel draw card for players
 	private void handleDrawCard() {
 	    if (!isDrawCardListenerAdded) {
 	        view.getDeckLabel().addMouseListener(new MouseAdapter() {
@@ -593,102 +586,6 @@ public class GameController implements ActionListener {
 	}
 
 	
-	
-	private void handleCpuDrawCard(Player cpuPlayer, JPanel cpuPanel) {
-	    if (cpuPlayer.getHand().size() >= 11) {
-	        //System.out.println(cpuPlayer.getName() + " hand is full. No more cards can be drawn.");
-	        return;
-	    }
-
-	    // Draw a card from the deck
-	    Card drawnCard = model.drawCard(cpuPlayer);
-	    if (drawnCard == null) {
-	        System.out.println("Deck is empty. " + cpuPlayer.getName() + " cannot draw a card.");
-	        return;
-	    }
-
-	    cpuPlayer.addCardToHand(drawnCard);
-	    System.out.println(cpuPlayer.getName() + " drew: " + drawnCard);
-
-	    JButton cpuCardButton = new JButton(new ImageIcon("resources/lback.png"));
-	    cpuCardButton.setOpaque(false);
-	    cpuCardButton.setContentAreaFilled(false);
-	    cpuCardButton.setBorderPainted(false);
-	    cpuCardButton.setFocusPainted(false);
-
-	    cpuCardButton.addMouseListener(new MouseAdapter() {
-	        @Override
-	        public void mouseEntered(MouseEvent e) {
-	            cpuCardButton.setLocation(cpuCardButton.getX(), cpuCardButton.getY() - 10);
-	            cpuCardButton.getParent().repaint();
-	        }
-
-	        @Override
-	        public void mouseExited(MouseEvent e) {
-	            cpuCardButton.setLocation(cpuCardButton.getX(), cpuCardButton.getY() + 10); 
-	            cpuCardButton.getParent().repaint();
-	        }
-	    });
-
-	    
-	    SwingUtilities.invokeLater(new Runnable() {
-	        @Override
-	        public void run() {
-	            cpuPanel.add(cpuCardButton);
-	            cpuPanel.revalidate();
-	            cpuPanel.repaint();
-	        }
-	    });
-	}
-	
-	
-	
-	private void cpuDrawCard(Player cpuPlayer, JPanel cpuPanel) {
-	    if (cpuPlayer.getHand().size() >= 11) {
-	        System.out.println(cpuPlayer.getName() + " hand is full. No more cards can be drawn.");
-	        return;
-	    }
-
-	    // Draw a card from the deck
-	    Card drawnCard = model.drawCard(cpuPlayer);
-	    if (drawnCard == null) {
-	        System.out.println("Deck is empty. " + cpuPlayer.getName() + " cannot draw a card.");
-	        return;
-	    }
-
-	    cpuPlayer.addCardToHand(drawnCard);
-	    System.out.println(cpuPlayer.getName() + " drew: " + drawnCard);
-
-	    JButton cpuCardButton = new JButton(new ImageIcon("resources/lback_2.png"));
-	    cpuCardButton.setOpaque(false);
-	    cpuCardButton.setContentAreaFilled(false);
-	    cpuCardButton.setBorderPainted(false);
-	    cpuCardButton.setFocusPainted(false);
-	    cpuCardButton.addMouseListener(new MouseAdapter() {
-	        @Override
-	        public void mouseEntered(MouseEvent e) {
-	            cpuCardButton.setLocation(cpuCardButton.getX() - 10, cpuCardButton.getY());
-	            cpuCardButton.getParent().repaint();
-	        }
-
-	        @Override
-	        public void mouseExited(MouseEvent e) {
-	            cpuCardButton.setLocation(cpuCardButton.getX() +10, cpuCardButton.getY()); 
-	            cpuCardButton.getParent().repaint();
-	        }
-	    });
-
-	    
-	    SwingUtilities.invokeLater(new Runnable() {
-	        @Override
-	        public void run() {
-	            cpuPanel.add(cpuCardButton);
-	            cpuPanel.revalidate();
-	            cpuPanel.repaint();
-	        }
-	    });
-	}
-
 	public int getSelectedPlayerCount() {
 		return selectedPlayerCount;
 	}

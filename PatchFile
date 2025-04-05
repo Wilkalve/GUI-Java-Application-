@@ -6,6 +6,12 @@
 3- UI frame size: resize the UI frame to 908pxl X 808pxl.
 4- Modify the ui to include three button to select the number of player at the start of the game
 5- Created an interface class.
-6- 
+6- move the chat panel to the client side and make it appear only when you connect.
+7 - created more classes to accommodate the code
+
+                 <network protocol>
+ - 1# — Client requests disconnection.
+ - 2#<player_name> — Client joins the game and sets their name.
+ - 3#<message> — Client broadcasts a message to all players.
 
 
